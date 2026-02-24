@@ -19,12 +19,36 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { SOLAR_TO_LUNAR_INDEX, type MonthlyIndex } from '../src/data/date-index';
 import type { SolarToLunarEntry } from '../src/types';
+import { getSajuMonth } from '../src/core/solar-term';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const BASE_JD = 2415021; // 1900-01-01의 Julian Day
 const DAY_PILLAR_EPOCH = 2415011; // dayPillarId 계산용 epoch
+
+/**
+ * 年上起月法(오호둔법)으로 올바른 monthPillarId 계산
+ *
+ * 연간(年干)에 따른 인월(寅月, sajuMonth=1) 시작 60갑자 ID:
+ *   갑(0)/기(5) → 丙寅 (id=2)
+ *   을(1)/경(6) → 戊寅 (id=14)
+ *   병(2)/신(7) → 庚寅 (id=26)
+ *   정(3)/임(8) → 壬寅 (id=38)
+ *   무(4)/계(9) → 甲寅 (id=50)
+ */
+const MONTH_PILLAR_BASE = [2, 14, 26, 38, 50] as const;
+
+function computeCorrectMonthPillarId(
+  solarMonth: number,
+  solarDay: number,
+  yearPillarId: number
+): number {
+  const sajuMonth = getSajuMonth(solarMonth, solarDay);
+  const yearStemIndex = yearPillarId % 10; // 천간 인덱스 (0~9)
+  const basePillarId = MONTH_PILLAR_BASE[yearStemIndex % 5];
+  return (basePillarId + sajuMonth - 1) % 60;
+}
 
 /**
  * 엔트리를 24비트 정수로 인코딩 (dayPillarId 제외)
@@ -46,7 +70,12 @@ function encodeEntry(entry: SolarToLunarEntry, solarYear: number): number {
   const lunarDay = entry.lunar.day - 1;
   const isLeap = entry.lunar.isLeap ? 1 : 0;
   const yearPillarId = entry.gapja.yearPillarId;
-  const monthPillarId = entry.gapja.monthPillarId;
+  // 월주를 절기 기준으로 재계산 (원본 데이터는 음력 월초 기준으로 잘못됨)
+  const monthPillarId = computeCorrectMonthPillarId(
+    entry.solar.month,
+    entry.solar.day,
+    yearPillarId
+  );
 
   let packed = 0;
   packed |= lunarYearOffset & 0x3;
@@ -144,6 +173,12 @@ function verifyCompression(
       const original = monthIndex.entries[j];
 
       // dayPillarId는 원본 데이터에 버그가 있으므로 비교에서 제외
+      // monthPillarId는 절기 기준으로 재계산했으므로 재계산된 값과 비교
+      const expectedMonthPillarId = computeCorrectMonthPillarId(
+        original.solar.month,
+        original.solar.day,
+        original.gapja.yearPillarId
+      );
       if (
         original.jd !== jd ||
         original.lunar.year !== lunarYear ||
@@ -151,7 +186,7 @@ function verifyCompression(
         original.lunar.day !== lunarDay ||
         original.lunar.isLeap !== isLeap ||
         original.gapja.yearPillarId !== yearPillarId ||
-        original.gapja.monthPillarId !== monthPillarId
+        expectedMonthPillarId !== monthPillarId
       ) {
         console.error('Mismatch:', { original, decoded: { jd, lunarYear, lunarMonth, lunarDay, isLeap, yearPillarId, monthPillarId, dayPillarId } });
         errors++;
@@ -162,6 +197,33 @@ function verifyCompression(
   }
 
   console.log(`Verified ${verified} entries, ${errors} errors`);
+
+  // 독립 검증: 외부 검증된 고정 정답셋 (오호둔법 기준표)
+  // 입춘 당일(인월 시작)은 모든 사주 전문서에서 일치하는 정답
+  const KNOWN_VECTORS: Array<{ key: string; dayIdx: number; expectedMPId: number; desc: string }> = [
+    { key: '2024-02', dayIdx: 3, expectedMPId: 2,  desc: '甲辰年 인월 丙寅(2)' },
+    { key: '2025-02', dayIdx: 3, expectedMPId: 14, desc: '乙巳年 인월 戊寅(14)' },
+    { key: '1996-02', dayIdx: 3, expectedMPId: 26, desc: '丙子年 인월 庚寅(26)' },
+    { key: '1997-02', dayIdx: 3, expectedMPId: 38, desc: '丁丑年 인월 壬寅(38)' },
+    { key: '1998-02', dayIdx: 3, expectedMPId: 50, desc: '戊寅年 인월 甲寅(50)' },
+  ];
+
+  console.log('Verifying known-correct vectors...');
+  for (const vec of KNOWN_VECTORS) {
+    const keyIdx = monthKeys.indexOf(vec.key);
+    if (keyIdx === -1) { console.error(`Key not found: ${vec.key}`); return false; }
+    let offset = 0;
+    for (let k = 0; k < keyIdx; k++) offset += dayCounts[k] * 3;
+    offset += vec.dayIdx * 3;
+    const packed = dataBytes[offset] | (dataBytes[offset + 1] << 8) | (dataBytes[offset + 2] << 16);
+    const mpId = (packed >> 18) & 0x3f;
+    if (mpId !== vec.expectedMPId) {
+      console.error(`VECTOR FAIL: ${vec.desc} - expected ${vec.expectedMPId}, got ${mpId}`);
+      errors++;
+    }
+  }
+  console.log(`Known vectors: ${KNOWN_VECTORS.length} checked, ${errors} errors`);
+
   return errors === 0;
 }
 

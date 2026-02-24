@@ -140,3 +140,101 @@ describe('getGapja', () => {
     expect(gapja.yearPillarHanja).toBe('己卯');
   });
 });
+
+describe('월주 절기 기준 검증 (Issue #5)', () => {
+  describe('1996년(丙子年) 전체 월 순환', () => {
+    const cases = [
+      { date: [1996, 2, 4], expected: '庚寅', desc: '인월 (입춘)' },
+      { date: [1996, 3, 6], expected: '辛卯', desc: '묘월 (경칩)' },
+      { date: [1996, 4, 5], expected: '壬辰', desc: '진월 (청명)' },
+      { date: [1996, 5, 6], expected: '癸巳', desc: '사월 (입하)' },
+      { date: [1996, 6, 6], expected: '甲午', desc: '오월 (망종)' },
+      { date: [1996, 7, 7], expected: '乙未', desc: '미월 (소서)' },
+      { date: [1996, 8, 8], expected: '丙申', desc: '신월 (입추)' },
+      { date: [1996, 9, 8], expected: '丁酉', desc: '유월 (백로)' },
+      { date: [1996, 10, 8], expected: '戊戌', desc: '술월 (한로)' },
+      { date: [1996, 11, 8], expected: '己亥', desc: '해월 (입동)' },
+      { date: [1996, 12, 7], expected: '庚子', desc: '자월 (대설)' },
+    ];
+
+    cases.forEach(({ date, expected, desc }) => {
+      test(`${date.join('-')} → ${expected} (${desc})`, () => {
+        const gapja = getGapja(date[0], date[1], date[2]);
+        expect(gapja.monthPillarHanja).toBe(expected);
+      });
+    });
+  });
+
+  describe('절기 경계 검증', () => {
+    test('소한 전 (1996-01-01) → 자월 戊子', () => {
+      expect(getGapja(1996, 1, 1).monthPillarHanja).toBe('戊子');
+    });
+
+    test('소한 후 (1996-01-06) → 축월 己丑', () => {
+      expect(getGapja(1996, 1, 6).monthPillarHanja).toBe('己丑');
+    });
+
+    test('입춘 전 (1996-02-03) → 축월 己丑', () => {
+      expect(getGapja(1996, 2, 3).monthPillarHanja).toBe('己丑');
+    });
+
+    test('입춘 당일 (1996-02-04) → 인월 庚寅', () => {
+      expect(getGapja(1996, 2, 4).monthPillarHanja).toBe('庚寅');
+    });
+
+    test('청명 전 (1996-04-04) → 묘월 辛卯', () => {
+      expect(getGapja(1996, 4, 4).monthPillarHanja).toBe('辛卯');
+    });
+
+    test('청명 당일 (1996-04-05) → 진월 壬辰', () => {
+      expect(getGapja(1996, 4, 5).monthPillarHanja).toBe('壬辰');
+    });
+  });
+
+  describe('오호둔법 연간별 검증', () => {
+    // 갑/기년 → 병인(丙寅) 시작
+    test('2024 갑진년 인월 → 丙寅', () => {
+      expect(getGapja(2024, 2, 4).monthPillarHanja).toBe('丙寅');
+    });
+
+    // 을/경년 → 무인(戊寅) 시작
+    test('2025 을사년 인월 → 戊寅', () => {
+      expect(getGapja(2025, 2, 4).monthPillarHanja).toBe('戊寅');
+    });
+
+    // 병/신년 → 경인(庚寅) 시작
+    test('1996 병자년 인월 → 庚寅', () => {
+      expect(getGapja(1996, 2, 4).monthPillarHanja).toBe('庚寅');
+    });
+
+    // 정/임년 → 임인(壬寅) 시작
+    test('1997 정축년 인월 → 壬寅', () => {
+      expect(getGapja(1997, 2, 4).monthPillarHanja).toBe('壬寅');
+    });
+
+    // 무/계년 → 갑인(甲寅) 시작
+    test('1998 무인년 인월 → 甲寅', () => {
+      expect(getGapja(1998, 2, 4).monthPillarHanja).toBe('甲寅');
+    });
+  });
+
+  describe('경계 연도 검증', () => {
+    // 데이터 범위 시작 연도 (1900 庚子年)
+    test('1900-02-05 경자년 인월 → 戊寅', () => {
+      expect(getGapja(1900, 2, 5).monthPillarHanja).toBe('戊寅');
+    });
+
+    test('1900-01-01 기해년 자월 → 丙子', () => {
+      expect(getGapja(1900, 1, 1).monthPillarHanja).toBe('丙子');
+    });
+
+    // 데이터 범위 끝 연도 (2050 庚午年)
+    test('2050-02-04 경오년 인월 → 戊寅', () => {
+      expect(getGapja(2050, 2, 4).monthPillarHanja).toBe('戊寅');
+    });
+
+    test('2050-12-07 경오년 자월 → 戊子', () => {
+      expect(getGapja(2050, 12, 7).monthPillarHanja).toBe('戊子');
+    });
+  });
+});

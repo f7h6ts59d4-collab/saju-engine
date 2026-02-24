@@ -222,8 +222,8 @@ export function getSajuMonth(month: number, day: number): number {
     }
   }
 
-  // 1월 소한 이전은 축월(12)
-  return 12;
+  // 1월 소한 이전은 자월(11) (대설 12/7 ~ 소한 1/6 구간)
+  return 11;
 }
 
 /**

@@ -157,8 +157,8 @@ describe('getSolarTermsBySajuMonth', () => {
 });
 
 describe('getSajuMonth', () => {
-  test('1월 1일 → 소한 이전, 축월(12)', () => {
-    expect(getSajuMonth(1, 1)).toBe(12);
+  test('1월 1일 → 소한 이전, 자월(11) (대설 12/7 ~ 소한 1/6 구간)', () => {
+    expect(getSajuMonth(1, 1)).toBe(11);
   });
 
   test('1월 6일 → 소한 이후, 축월(12)', () => {

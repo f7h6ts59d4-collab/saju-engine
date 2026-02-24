@@ -17,7 +17,7 @@
     "types": ["node", "jest"],
     "jsx": "react"
   },
-  "include": ["src/**/*", "scripts/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "__tests__"],
   "ts-node": {
     "esm": true
