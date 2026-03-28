@@ -590,6 +590,13 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 ## 변경 이력
 
+### v1.0.8 (2026-03-28)
+
+- **버그 수정**: `"type": "module"` 제거로 CJS 호환성 수정 (PR [#6](https://github.com/urstory/manseryeok-js/pull/6) by [@Magiof](https://github.com/Magiof))
+  - `"type": "module"`이 설정되어 있어 CJS 출력(`dist/index.js`)을 Node.js가 ESM으로 해석하려는 문제 수정
+  - ESM 출력 파일을 `.mjs` 확장자로 변경하여 명시적 모듈 포맷 구분
+  - `rollup.config.js` → `rollup.config.mjs` 변경
+
 ### v1.0.7 (2026-02-24)
 
 - **버그 수정**: 월주(monthPillarId)가 음력 월초 기준으로 계산되던 문제를 절기(節氣) 기준으로 수정 ([#5](https://github.com/urstory/manseryeok-js/issues/5))
