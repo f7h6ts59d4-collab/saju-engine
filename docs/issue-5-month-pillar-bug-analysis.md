@@ -1,5 +1,9 @@
 # Issue #5: 월주(monthPillarId) 절기 기준 계산 버그 분석 및 해결 방안
 
+> **스코프 (2026-06 측정으로 확인):** 이 문서는 **빌드 전 원본 데이터(L1, `src/data/date-index.ts`)**의 월주가 음력 월초 기준이라는 사실을 정확히 설명한다.
+> 단, **빌드의 compress 단계(`scripts/compress-date-index.ts`)가 월주를 절기 기준(`getSajuMonth` + 年上起月法)으로 재계산**하므로, 실제 **배포(dist, rollup alias)·테스트(jest, moduleNameMapper) 엔진(L2, `date-index-compressed.ts`)은 절기 기준**이다. L1(음력)은 `tsx`로 src를 직접 실행할 때만 노출된다.
+> 보정 래퍼(L3, `src/correction/correct-pillars.ts`)는 L2 위에 분 단위 절입 정밀도와 천문 절입 정확도(고정 절기일의 ±1일 오차 교정)를 더한다. 자세한 레이어 구분은 `docs/specs/solar-terms-correction-wrapper-spec.md` 참고.
+
 ## 1. 이슈 요약
 
 `getGapja()`, `calculateSaju()`, `solarToLunar()`에서 반환하는 **월주(monthPillarId)**가 절기(節氣) 기준이 아닌 **음력 월 초하루(1일)** 기준으로 전환됨.
