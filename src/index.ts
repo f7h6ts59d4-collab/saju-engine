@@ -71,6 +71,11 @@ export { SOLAR_TERMS_DATA, SUPPORTED_SOLAR_TERM_YEARS } from './data/solar-terms
 export type { SolarTermWithDate } from './core/solar-term';
 
 // ============================================
+// Correction (절기 경계 월주·연주 보정)
+// ============================================
+export { correctPillars, type BirthInput, type CorrectedSaju } from './correction/correct-pillars';
+
+// ============================================
 // Data Access (for advanced usage)
 // ============================================
 export { SIXTY_PILLARS, getPillarById, getPillarByHangul } from './data/sixty-pillars';

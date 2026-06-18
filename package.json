@@ -47,6 +47,7 @@
   "homepage": "https://github.com/urstory/manseryeok-js#readme",
   "devDependencies": {
     "@rollup/plugin-alias": "^5.1.0",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-typescript": "^11.1.0",
     "@types/jest": "^29.5.0",

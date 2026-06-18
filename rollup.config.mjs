@@ -1,6 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import alias from '@rollup/plugin-alias';
+import json from '@rollup/plugin-json';
 import * as path from 'path';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -28,6 +29,7 @@ export default [
     plugins: [
       aliasPlugin,
       nodeResolve(),
+      json(),
       typescript()
     ]
   },
@@ -42,6 +44,7 @@ export default [
     plugins: [
       aliasPlugin,
       nodeResolve(),
+      json(),
       typescript()
     ]
   }

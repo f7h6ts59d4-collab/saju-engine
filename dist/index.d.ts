@@ -33,6 +33,7 @@ export { getAllSolarTerms, getSolarTermInfoByIndex, getSolarTermInfoByName, getS
 export { SOLAR_TERM_NAMES } from './data/solar-terms';
 export { SOLAR_TERMS_DATA, SUPPORTED_SOLAR_TERM_YEARS } from './data/solar-terms-data';
 export type { SolarTermWithDate } from './core/solar-term';
+export { correctPillars, type BirthInput, type CorrectedSaju } from './correction/correct-pillars';
 export { SIXTY_PILLARS, getPillarById, getPillarByHangul } from './data/sixty-pillars';
 export { SOLAR_TO_LUNAR_INDEX, getMonthlyIndex } from './data/date-index';
 //# sourceMappingURL=index.d.ts.map
