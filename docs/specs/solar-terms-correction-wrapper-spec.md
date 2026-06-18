@@ -78,7 +78,7 @@
 4. **시간대 테스트**: 동일 UTC 순간을 서로 다른 도시(시간대)로 입력해도 같은 명식이 나오는지 / 시차로 절기 경계를 넘는 케이스가 올바른지 확인.
 5. **일주·시주 불변 테스트**: 보정이 일어나도 일주·시주는 안 바뀌는지 확인.
 
-> 잠재 이슈(범위 밖): `npm test`는 jest `moduleNameMapper`가 가리키는 `date-index-compressed.ts`(gitignore, prebuild 생성)에 의존한다. 신규 클론에서 빌드 없이 `npm test` 시 매핑 대상이 없어 실패할 수 있다 — 필요 시 `pretest: npm run compress-data` 추가 검토.
+> 테스트 인프라: `npm test`는 jest `moduleNameMapper`가 가리키는 `date-index-compressed.ts`(gitignore, 자동생성)에 의존한다. 이를 위해 `pretest: npm run compress-data`로 테스트 전 compressed 데이터를 생성한다(신규 클론에서 빌드 없이 `npm test` 가능).
 
 ## 알려진 함정 (주석으로 명시)
 

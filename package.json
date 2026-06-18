@@ -16,6 +16,7 @@
     "build:solar-terms": "tsx scripts/build-solar-terms.ts",
     "prebuild": "npm run compress-data",
     "build": "rollup -c",
+    "pretest": "npm run compress-data",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
