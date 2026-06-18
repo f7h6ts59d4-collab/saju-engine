@@ -2,12 +2,29 @@
  * 절기 경계 월주·연주 보정 래퍼 검증.
  *
  * 기준 절기: 입춘 2024 = 2024-02-04 17:27 KST (= 08:27 UTC). solar-terms-precise.json.
+ *
+ * 주의: jest는 `moduleNameMapper`로 `date-index`를 `date-index-compressed`로 돌려서,
+ * 배포(dist)와 동일한 절기 기준(compressed) 엔진을 검증한다. 즉 여기서 비교하는
+ * `calculateSaju`는 빌드 전 음력 기준 원본(L1)이 아니라 배포 동작(L2)이다.
  */
 
 import { correctPillars } from '../correction/correct-pillars';
 import { calculateSaju } from '../core/saju';
 
 describe('correctPillars - 절기 경계 보정', () => {
+  // 0) 레이어 가드: jest가 보는 엔진(= 배포 compressed)이 '절기 기준'임을 고정한다.
+  //    월주가 입춘(2/4)에 전환되고, 음력 1일(설날 2/10)에는 바뀌지 않아야 한다.
+  //    (원본 음력 데이터로 회귀하면 2/10에 전환되어 이 테스트가 깨진다.)
+  it('배포 엔진(compressed)은 절기 기준이다 — 입춘에 전환, 설날엔 불변', () => {
+    const feb03 = calculateSaju(2024, 2, 3, 12, 0, { applyTimeCorrection: false }).monthPillar;
+    const feb04 = calculateSaju(2024, 2, 4, 12, 0, { applyTimeCorrection: false }).monthPillar;
+    const feb10 = calculateSaju(2024, 2, 10, 12, 0, { applyTimeCorrection: false }).monthPillar;
+
+    expect(feb04).not.toBe(feb03); // 입춘(2/4)에 월주 전환
+    expect(feb10).toBe(feb04); // 설날=음력 1/1(2/10)에는 불변
+    expect(feb04).toBe('병인'); // 입춘 후 = 인월
+  });
+
   // 1) 경계 정확성: 같은 날·같은 도시라도 절입 전/후로 월주가 갈려야 한다.
   //    (엔진 단독은 절입 당일을 일 단위로만 봐서 구분하지 못함)
   it('절입 직전/직후로 월주가 갈린다 (입춘 2024)', () => {
