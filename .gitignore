@@ -19,3 +19,8 @@ birth-examples.js
 
 # Auto-generated compressed data
 src/data/date-index-compressed.ts
+
+# etc
+CLAUDE.md
+docs/specs/solar-terms-build-spec.md
+docs/specs/solar-terms-correction-wrapper-spec.md
