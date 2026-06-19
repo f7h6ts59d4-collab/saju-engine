@@ -71,8 +71,5 @@
   },
   "engines": {
     "node": ">=16.0.0"
-  },
-  "dependencies": {
-    "@fullstackfamily/manseryeok": "github:f7h6ts59d4-collab/manseryeok-js#dfdf48cb22452674565e97d855ca276fd2f4da3d"
   }
 }
