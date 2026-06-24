@@ -20,12 +20,19 @@
  * 절입 전/후만 어긋난다. 따라서 입춘 절입 전 출생에 한해 엔진의 전날 연주를 빌려
  * 전년으로 되돌린다.
  *
+ * 일주(日柱)·시주(時柱)는 출생지 **진태양시**(경도 보정 + 균시차 EoT) 기준으로 계산한다.
+ * 출생 순간(UTC)과 출생지 좌표로 HourAngle 진태양시 달력 순간을 구해, 엔진의 KST 경도
+ * 보정을 끄고(applyTimeCorrection:false) 그 달력값으로 일주·시주를 산출한다. 엔진 기본
+ * 경도 보정 공식은 입력이 KST임을 전제해 미국 출생에선 깨지므로 반드시 끈다.
+ *
  * 원칙:
- * - 비교는 출생 순간(UTC) vs 절입 순간(UTC). 진태양시(경도·균시차)는 쓰지 않는다.
- * - 일주(日柱)·시주(時柱)는 엔진 출력을 그대로 둔다(절대 덮지 않음).
+ * - 연주·월주 판정은 출생 순간(UTC) vs 절입 순간(UTC). 진태양시/경도를 섞지 않는다.
+ *   절기는 천문학적 절대 순간이라 UTC 기준이 맞다.
+ * - 일주·시주는 진태양시 달력값으로 산출한다(엔진 KST 보정은 끈다).
  * - 엔진/`src/data` 미변경. 보정은 엔진 출력 위에 얹는 별도 레이어다.
  */
 
+import * as Astronomy from 'astronomy-engine';
 import { calculateSaju, type SajuResult } from '../core/saju';
 import { lunarToSolar } from '../core/solar-lunar-converter';
 import { getPillarById } from '../data/sixty-pillars';
@@ -99,6 +106,41 @@ function resolveSajuMonth(birthUtcMs: number, year: number): number {
   return governing ? SAJU_MONTH_BY_TERM[governing] : 11;
 }
 
+interface CalendarParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+}
+
+/**
+ * 출생 순간(UTC)과 출생지 좌표로 진태양시의 달력 순간을 구한다.
+ *
+ * HourAngle(태양)에는 경도 보정과 균시차(EoT)가 자동 포함되므로 별도 EoT 공식이 없다.
+ * tstInstant의 UTC 달력 필드를 읽으면 자정 넘김(전날/다음날)이 자동 처리된다.
+ */
+export function trueSolarParts(utc: Date, latitude: number, longitude: number): CalendarParts {
+  const observer = new Astronomy.Observer(latitude, longitude, 0);
+  const hourAngle = Astronomy.HourAngle(Astronomy.Body.Sun, utc, observer); // 0~24
+  const tstHours = (hourAngle + 12) % 24; // 진태양시 시각(0~24)
+
+  const utcHourFrac =
+    utc.getUTCHours() + utc.getUTCMinutes() / 60 + utc.getUTCSeconds() / 3600;
+  let offsetHours = tstHours - utcHourFrac;
+  if (offsetHours > 12) offsetHours -= 24; // (-12, 12]로 wrap
+  if (offsetHours <= -12) offsetHours += 24;
+
+  const tstInstant = new Date(utc.getTime() + offsetHours * 3600 * 1000);
+  return {
+    year: tstInstant.getUTCFullYear(),
+    month: tstInstant.getUTCMonth() + 1,
+    day: tstInstant.getUTCDate(),
+    hour: tstInstant.getUTCHours(),
+    minute: tstInstant.getUTCMinutes(),
+  };
+}
+
 /**
  * 연주 보정: 입춘 절입 '전' 출생이면 엔진의 전날 연주를 빌려 전년으로 되돌린다.
  * 엔진의 연주 경계는 입춘 '날짜'에 맞춰져 있어, 입춘 당일 절입 전 시각만 어긋난다.
@@ -144,6 +186,10 @@ export interface BirthInput {
   isLeapMonth?: boolean;
   /** 출생 도시의 IANA 시간대 id (예: 'Asia/Seoul'). 도시→IANA 매핑은 앱이 제공. */
   timezone: string;
+  /** 출생 도시 대표 경도(동경 양수, 서경 음수. 예: 뉴욕 -74). 진태양시 일주·시주에 사용. */
+  longitude: number;
+  /** 출생 도시 대표 위도(북위 양수. 예: 뉴욕 40.7). HourAngle 관측자 위치용. */
+  latitude: number;
 }
 
 export interface CorrectedSaju {
@@ -151,10 +197,10 @@ export interface CorrectedSaju {
   yearPillarHanja: string;
   monthPillar: string;
   monthPillarHanja: string;
-  /** 일주: 엔진 출력 그대로(불변). */
+  /** 일주: 출생지 진태양시 기준. */
   dayPillar: string;
   dayPillarHanja: string;
-  /** 시주: 엔진 출력 그대로(불변). 시간 모름이면 정오 기준 참고용. */
+  /** 시주: 출생지 진태양시 기준. 시간 모름이면 정오 기준 참고용. */
   hourPillar: string | null;
   hourPillarHanja: string | null;
   /** true면 출생시간 미상 → 정오(12:00) 가정, 시주는 참고용. */
@@ -179,28 +225,36 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
   const hour = input.hour ?? 12;
   const minute = input.minute ?? 0;
 
-  // 3. 엔진 기본 명식 (일주·시주 출처, 절대 덮지 않음).
+  // 3. 엔진 기본 명식 (연주 보정의 기준값). 연주는 날짜 기반이라 경도 보정 무관.
   const base = calculateSaju(year, month, day, hour, minute);
 
-  // 4. 출생 순간 → UTC (도시 IANA 시간대, DST 자동 반영).
-  const birthUtcMs = zonedDateTimeToUtc(year, month, day, hour, minute, input.timezone).getTime();
+  // 4. 출생 순간 → UTC (도시 IANA 시간대, DST 자동 반영). 연주·월주(절기) 판정 기준.
+  const birthUtc = zonedDateTimeToUtc(year, month, day, hour, minute, input.timezone);
+  const birthUtcMs = birthUtc.getTime();
 
-  // 5. 연주: 입춘 절입 경계 보정 (전날 값 빌려오기).
+  // 5. 연주: 입춘 절입 경계 보정 (전날 값 빌려오기). UTC vs 절입 UTC, 진태양시 미사용.
   const yp = resolveYearPillar(base, year, month, day, birthUtcMs);
 
   // 6. 월주: 절기 절입(분 단위, UTC 비교)으로 사주월 판정 → 年上起月法으로 산출.
   const sajuMonth = resolveSajuMonth(birthUtcMs, year);
   const mp = getPillarById(monthPillarId(yp.hangul.charAt(0), sajuMonth));
 
+  // 7. 일주·시주: 출생지 진태양시 달력값으로 산출. 엔진 KST 경도 보정은 끈다.
+  //    진태양시가 자정을 넘으면 tst.day가 자동으로 전날/다음날이 되어 일주가 따라간다.
+  const tst = trueSolarParts(birthUtc, input.latitude, input.longitude);
+  const tstBase = calculateSaju(tst.year, tst.month, tst.day, tst.hour, tst.minute, {
+    applyTimeCorrection: false,
+  });
+
   return {
     yearPillar: yp.hangul,
     yearPillarHanja: yp.hanja,
     monthPillar: mp.combined.hangul,
     monthPillarHanja: mp.combined.hanja,
-    dayPillar: base.dayPillar,
-    dayPillarHanja: base.dayPillarHanja,
-    hourPillar: base.hourPillar,
-    hourPillarHanja: base.hourPillarHanja,
+    dayPillar: tstBase.dayPillar,
+    dayPillarHanja: tstBase.dayPillarHanja,
+    hourPillar: tstBase.hourPillar,
+    hourPillarHanja: tstBase.hourPillarHanja,
     timeUnknown,
   };
 }

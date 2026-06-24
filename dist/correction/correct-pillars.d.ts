@@ -20,11 +20,31 @@
  * 절입 전/후만 어긋난다. 따라서 입춘 절입 전 출생에 한해 엔진의 전날 연주를 빌려
  * 전년으로 되돌린다.
  *
+ * 일주(日柱)·시주(時柱)는 출생지 **진태양시**(경도 보정 + 균시차 EoT) 기준으로 계산한다.
+ * 출생 순간(UTC)과 출생지 좌표로 HourAngle 진태양시 달력 순간을 구해, 엔진의 KST 경도
+ * 보정을 끄고(applyTimeCorrection:false) 그 달력값으로 일주·시주를 산출한다. 엔진 기본
+ * 경도 보정 공식은 입력이 KST임을 전제해 미국 출생에선 깨지므로 반드시 끈다.
+ *
  * 원칙:
- * - 비교는 출생 순간(UTC) vs 절입 순간(UTC). 진태양시(경도·균시차)는 쓰지 않는다.
- * - 일주(日柱)·시주(時柱)는 엔진 출력을 그대로 둔다(절대 덮지 않음).
+ * - 연주·월주 판정은 출생 순간(UTC) vs 절입 순간(UTC). 진태양시/경도를 섞지 않는다.
+ *   절기는 천문학적 절대 순간이라 UTC 기준이 맞다.
+ * - 일주·시주는 진태양시 달력값으로 산출한다(엔진 KST 보정은 끈다).
  * - 엔진/`src/data` 미변경. 보정은 엔진 출력 위에 얹는 별도 레이어다.
  */
+interface CalendarParts {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+}
+/**
+ * 출생 순간(UTC)과 출생지 좌표로 진태양시의 달력 순간을 구한다.
+ *
+ * HourAngle(태양)에는 경도 보정과 균시차(EoT)가 자동 포함되므로 별도 EoT 공식이 없다.
+ * tstInstant의 UTC 달력 필드를 읽으면 자정 넘김(전날/다음날)이 자동 처리된다.
+ */
+export declare function trueSolarParts(utc: Date, latitude: number, longitude: number): CalendarParts;
 export interface BirthInput {
     /** 생년월일 (calendar 기준) */
     year: number;
@@ -39,16 +59,20 @@ export interface BirthInput {
     isLeapMonth?: boolean;
     /** 출생 도시의 IANA 시간대 id (예: 'Asia/Seoul'). 도시→IANA 매핑은 앱이 제공. */
     timezone: string;
+    /** 출생 도시 대표 경도(동경 양수, 서경 음수. 예: 뉴욕 -74). 진태양시 일주·시주에 사용. */
+    longitude: number;
+    /** 출생 도시 대표 위도(북위 양수. 예: 뉴욕 40.7). HourAngle 관측자 위치용. */
+    latitude: number;
 }
 export interface CorrectedSaju {
     yearPillar: string;
     yearPillarHanja: string;
     monthPillar: string;
     monthPillarHanja: string;
-    /** 일주: 엔진 출력 그대로(불변). */
+    /** 일주: 출생지 진태양시 기준. */
     dayPillar: string;
     dayPillarHanja: string;
-    /** 시주: 엔진 출력 그대로(불변). 시간 모름이면 정오 기준 참고용. */
+    /** 시주: 출생지 진태양시 기준. 시간 모름이면 정오 기준 참고용. */
     hourPillar: string | null;
     hourPillarHanja: string | null;
     /** true면 출생시간 미상 → 정오(12:00) 가정, 시주는 참고용. */
@@ -58,4 +82,5 @@ export interface CorrectedSaju {
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.
  */
 export declare function correctPillars(input: BirthInput): CorrectedSaju;
+export {};
 //# sourceMappingURL=correct-pillars.d.ts.map
