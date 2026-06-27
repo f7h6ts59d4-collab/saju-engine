@@ -14807,6 +14807,18 @@ function resolveYearPillar(base, year, month, day, birthUtcMs) {
     }
     return { hangul: base.yearPillar, hanja: base.yearPillarHanja };
 }
+/** 기둥 한글 배열의 천간·지지 오행을 세어 분포를 만든다. */
+function elementDistribution(pillars) {
+    const dist = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
+    for (const hangul of pillars) {
+        const p = getPillarByHangul(hangul);
+        if (!p)
+            continue;
+        dist[p.tiangan.element]++;
+        dist[p.dizhi.element]++;
+    }
+    return dist;
+}
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.
  */
@@ -14839,6 +14851,18 @@ function correctPillars(input) {
     const tstBase = calculateSaju(tst.year, tst.month, tst.day, tst.hour, tst.minute, {
         applyTimeCorrection: false,
     });
+    // 8. 파생 정보(기존 보정 결과 위에 얹음): 일간 + 오행 분포.
+    //    시간 모름이면 시주는 정오 참고용이므로 분포에서 제외(합 6).
+    const countedPillars = [yp.hangul, mp.combined.hangul, tstBase.dayPillar];
+    if (!timeUnknown && tstBase.hourPillar)
+        countedPillars.push(tstBase.hourPillar);
+    const elements = elementDistribution(countedPillars);
+    const dayTiangan = getPillarByHangul(tstBase.dayPillar)?.tiangan;
+    const dayMaster = {
+        hangul: dayTiangan?.hangul ?? '',
+        hanja: dayTiangan?.hanja ?? '',
+        element: dayTiangan?.element ?? '',
+    };
     return {
         yearPillar: yp.hangul,
         yearPillarHanja: yp.hanja,
@@ -14849,6 +14873,8 @@ function correctPillars(input) {
         hourPillar: tstBase.hourPillar,
         hourPillarHanja: tstBase.hourPillarHanja,
         timeUnknown,
+        dayMaster,
+        elements,
     };
 }
 

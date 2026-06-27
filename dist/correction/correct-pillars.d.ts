@@ -77,6 +77,20 @@ export interface CorrectedSaju {
     hourPillarHanja: string | null;
     /** true면 출생시간 미상 → 정오(12:00) 가정, 시주는 참고용. */
     timeUnknown: boolean;
+    /** 일간(日干): 일주의 천간. 사주의 '자기 자신'. */
+    dayMaster: {
+        hangul: string;
+        hanja: string;
+        element: string;
+    };
+    /** 오행 분포: 4기둥 천간·지지(시간 모름이면 시주 제외, 합 6) 목·화·토·금·수 개수. */
+    elements: {
+        목: number;
+        화: number;
+        토: number;
+        금: number;
+        수: number;
+    };
 }
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.

@@ -35,7 +35,7 @@
 import * as Astronomy from 'astronomy-engine';
 import { calculateSaju, type SajuResult } from '../core/saju';
 import { lunarToSolar } from '../core/solar-lunar-converter';
-import { getPillarById } from '../data/sixty-pillars';
+import { getPillarById, getPillarByHangul } from '../data/sixty-pillars';
 import { zonedDateTimeToUtc } from './timezone';
 import SOLAR_TERMS from './solar-terms-precise.json';
 
@@ -205,6 +205,32 @@ export interface CorrectedSaju {
   hourPillarHanja: string | null;
   /** true면 출생시간 미상 → 정오(12:00) 가정, 시주는 참고용. */
   timeUnknown: boolean;
+  /** 일간(日干): 일주의 천간. 사주의 '자기 자신'. */
+  dayMaster: {
+    hangul: string;
+    hanja: string;
+    element: string;
+  };
+  /** 오행 분포: 4기둥 천간·지지(시간 모름이면 시주 제외, 합 6) 목·화·토·금·수 개수. */
+  elements: {
+    목: number;
+    화: number;
+    토: number;
+    금: number;
+    수: number;
+  };
+}
+
+/** 기둥 한글 배열의 천간·지지 오행을 세어 분포를 만든다. */
+function elementDistribution(pillars: string[]): CorrectedSaju['elements'] {
+  const dist = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 } as CorrectedSaju['elements'];
+  for (const hangul of pillars) {
+    const p = getPillarByHangul(hangul);
+    if (!p) continue;
+    dist[p.tiangan.element as keyof CorrectedSaju['elements']]++;
+    dist[p.dizhi.element as keyof CorrectedSaju['elements']]++;
+  }
+  return dist;
 }
 
 /**
@@ -246,6 +272,19 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     applyTimeCorrection: false,
   });
 
+  // 8. 파생 정보(기존 보정 결과 위에 얹음): 일간 + 오행 분포.
+  //    시간 모름이면 시주는 정오 참고용이므로 분포에서 제외(합 6).
+  const countedPillars = [yp.hangul, mp.combined.hangul, tstBase.dayPillar];
+  if (!timeUnknown && tstBase.hourPillar) countedPillars.push(tstBase.hourPillar);
+  const elements = elementDistribution(countedPillars);
+
+  const dayTiangan = getPillarByHangul(tstBase.dayPillar)?.tiangan;
+  const dayMaster = {
+    hangul: dayTiangan?.hangul ?? '',
+    hanja: dayTiangan?.hanja ?? '',
+    element: dayTiangan?.element ?? '',
+  };
+
   return {
     yearPillar: yp.hangul,
     yearPillarHanja: yp.hanja,
@@ -256,5 +295,7 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     hourPillar: tstBase.hourPillar,
     hourPillarHanja: tstBase.hourPillarHanja,
     timeUnknown,
+    dayMaster,
+    elements,
   };
 }
