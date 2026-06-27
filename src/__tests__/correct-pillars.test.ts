@@ -145,3 +145,40 @@ describe('correctPillars - 진태양시 일주·시주', () => {
     expect(tst.minute).toBeLessThanOrEqual(30);
   });
 });
+
+describe('correctPillars - 오행 분포·일간', () => {
+  const SEOUL = { timezone: 'Asia/Seoul', longitude: 126.98, latitude: 37.57 };
+
+  // 카논 차트: 1992-07-23 04:00 서울 → 임신·정미·경자·무인.
+  it('임신·정미·경자·무인 → 오행 {목1,화1,토2,금2,수2}, 일간 경(庚,금)', () => {
+    const r = correctPillars({ year: 1992, month: 7, day: 23, hour: 4, minute: 0, ...SEOUL });
+
+    // 기둥 전제(이게 바뀌면 카논 차트가 아님)
+    expect([r.yearPillar, r.monthPillar, r.dayPillar, r.hourPillar]).toEqual([
+      '임신', '정미', '경자', '무인',
+    ]);
+
+    expect(r.elements).toEqual({ 목: 1, 화: 1, 토: 2, 금: 2, 수: 2 });
+    expect(r.dayMaster).toEqual({ hangul: '경', hanja: '庚', element: '금' });
+  });
+
+  it('오행 합은 시주가 있으면 8이다', () => {
+    const r = correctPillars({ year: 1992, month: 7, day: 23, hour: 4, minute: 0, ...SEOUL });
+    const sum = Object.values(r.elements).reduce((a, b) => a + b, 0);
+
+    expect(r.hourPillar).not.toBeNull();
+    expect(sum).toBe(8);
+  });
+
+  // 시간 모름이면 엔진은 시주를 정오(임오) 참고용으로 채우되 timeUnknown=true다.
+  // 오행 분포는 시주를 빼고 6글자만 센다.
+  it('시간 모름(timeUnknown)이면 오행 합은 6, 일간은 정상이다', () => {
+    const r = correctPillars({ year: 1992, month: 7, day: 23, ...SEOUL });
+    const sum = Object.values(r.elements).reduce((a, b) => a + b, 0);
+
+    expect(r.timeUnknown).toBe(true);
+    expect(sum).toBe(6);
+    expect(r.dayMaster.hangul).toBe('경');
+    expect(r.dayMaster.element).toBe('금');
+  });
+});
