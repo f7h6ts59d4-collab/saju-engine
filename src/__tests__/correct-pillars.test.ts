@@ -182,3 +182,45 @@ describe('correctPillars - 오행 분포·일간', () => {
     expect(r.dayMaster.element).toBe('금');
   });
 });
+
+describe('correctPillars - 십성(十星)·지장간', () => {
+  const SEOUL = { timezone: 'Asia/Seoul', longitude: 126.98, latitude: 37.57 };
+
+  // 카논 차트: 1992-07-23 04:00 서울 → 임신·정미·경자·무인, 일간 경(금).
+  // 명세 docs/specs/ten-gods-spec.md의 검증값과 대조한다.
+  it('천간 십성: 연 식신·월 정관·시 편인 (일간 제외)', () => {
+    const r = correctPillars({ year: 1992, month: 7, day: 23, hour: 4, minute: 0, ...SEOUL });
+
+    expect(r.tenGods.heavenly).toEqual({ year: '식신', month: '정관', hour: '편인' });
+  });
+
+  // 지지 대표 십성은 정기(본기) 천간 음양으로 판정한다. 특히 일지 자(子)는 위치상 양이지만
+  // 정기 계(癸)가 음수라 경금 일간 기준 '상관'이 나와야 한다(위치 음양으로 하면 식신이 되어 틀림).
+  it('지지 십성: 연 비견·월 정인·일 상관·시 편재 (정기 기준)', () => {
+    const r = correctPillars({ year: 1992, month: 7, day: 23, hour: 4, minute: 0, ...SEOUL });
+
+    expect(r.tenGods.earthly).toEqual({ year: '비견', month: '정인', day: '상관', hour: '편재' });
+  });
+
+  it('지장간 십성: 월지 미(정·을·기) → 정관·정재·정인', () => {
+    const r = correctPillars({ year: 1992, month: 7, day: 23, hour: 4, minute: 0, ...SEOUL });
+
+    expect(r.tenGods.hidden.month).toEqual([
+      { stem: '정', god: '정관' },
+      { stem: '을', god: '정재' },
+      { stem: '기', god: '정인' },
+    ]);
+  });
+
+  it('시간 모름이면 시주 관련 십성(hour)은 모두 null', () => {
+    const r = correctPillars({ year: 1992, month: 7, day: 23, ...SEOUL });
+
+    expect(r.timeUnknown).toBe(true);
+    expect(r.tenGods.heavenly.hour).toBeNull();
+    expect(r.tenGods.earthly.hour).toBeNull();
+    expect(r.tenGods.hidden.hour).toBeNull();
+    // 시주 외 층은 정상적으로 채워진다.
+    expect(r.tenGods.heavenly.year).toBe('식신');
+    expect(r.tenGods.earthly.day).toBe('상관');
+  });
+});
