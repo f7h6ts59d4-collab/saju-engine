@@ -91,6 +91,41 @@ export interface CorrectedSaju {
         금: number;
         수: number;
     };
+    /** 십성(十星): 일간 기준 오행 생극+음양 판정. 일간 자신(일주 천간)은 제외. */
+    tenGods: {
+        /** 천간 십성 (일간 제외: 연간·월간·시간). */
+        heavenly: {
+            year: string;
+            month: string;
+            hour: string | null;
+        };
+        /** 지지 십성 (각 지지의 정기 천간 기준: 연지·월지·일지·시지). */
+        earthly: {
+            year: string;
+            month: string;
+            day: string;
+            hour: string | null;
+        };
+        /** 지장간 십성 (각 지지의 지장간 전부에 매김). */
+        hidden: {
+            year: {
+                stem: string;
+                god: string;
+            }[];
+            month: {
+                stem: string;
+                god: string;
+            }[];
+            day: {
+                stem: string;
+                god: string;
+            }[];
+            hour: {
+                stem: string;
+                god: string;
+            }[] | null;
+        };
+    };
 }
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.
