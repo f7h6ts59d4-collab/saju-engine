@@ -63,6 +63,8 @@ export interface BirthInput {
     longitude: number;
     /** 출생 도시 대표 위도(북위 양수. 예: 뉴욕 40.7). HourAngle 관측자 위치용. */
     latitude: number;
+    /** 성별. 대운(大運) 방향 판정에 필요. 생략하면 majorLuck은 null. */
+    gender?: 'male' | 'female';
 }
 export interface CorrectedSaju {
     yearPillar: string;
@@ -126,6 +128,22 @@ export interface CorrectedSaju {
             }[] | null;
         };
     };
+    /** 대운(大運): 10년 단위 운의 흐름. 성별 미제공이면 null. */
+    majorLuck: {
+        direction: '순행' | '역행';
+        /** 대운수: 첫 대운 시작 나이. */
+        startAge: number;
+        cycles: {
+            startAge: number;
+            endAge: number;
+            pillar: string;
+            pillarHanja: string;
+            /** 천간 십성 (일간 기준). */
+            heavenlyGod: string;
+            /** 지지 십성 (정기 천간 기준). */
+            earthlyGod: string;
+        }[];
+    } | null;
 }
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.
