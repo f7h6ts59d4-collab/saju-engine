@@ -227,12 +227,12 @@ describe('correctPillars - 십성(十星)·지장간', () => {
 
 describe('correctPillars - 대운(大運)', () => {
   const DAEGU = { timezone: 'Asia/Seoul', longitude: 128.6, latitude: 35.87 };
-  // 남우 명식: 대구 1992-07-23 05:20, 남성 → 임신·정미·경자·무인, 일간 경금.
+  // 검증 명식: 대구 1992-07-23 05:20, 남성 → 임신·정미·경자·무인, 일간 경금.
   // 명세 docs/specs/major-luck-spec.md의 검증값(포스텔러 만세력 대조)과 맞춘다.
-  const NAMWOO = { year: 1992, month: 7, day: 23, hour: 5, minute: 20, ...DAEGU };
+  const CHART = { year: 1992, month: 7, day: 23, hour: 5, minute: 20, ...DAEGU };
 
   it('임신년 남성 → 순행, 대운수 5 (입추까지 약 15일 ÷ 3)', () => {
-    const r = correctPillars({ ...NAMWOO, gender: 'male' });
+    const r = correctPillars({ ...CHART, gender: 'male' });
 
     // 명식 전제(이게 바뀌면 검증 기준이 아님)
     expect(r.monthPillar).toBe('정미');
@@ -243,7 +243,7 @@ describe('correctPillars - 대운(大運)', () => {
   });
 
   it('간지: 월주 정미에서 순행 — 5세 무신부터 75세 을묘까지', () => {
-    const r = correctPillars({ ...NAMWOO, gender: 'male' });
+    const r = correctPillars({ ...CHART, gender: 'male' });
     const first8 = r.majorLuck!.cycles.slice(0, 8);
 
     expect(first8.map((c) => [c.startAge, c.pillar])).toEqual([
@@ -255,7 +255,7 @@ describe('correctPillars - 대운(大運)', () => {
   });
 
   it('십성: 갑인 대운(65세) → 천간 갑 편재, 지지 인 편재 (일간 경금)', () => {
-    const r = correctPillars({ ...NAMWOO, gender: 'male' });
+    const r = correctPillars({ ...CHART, gender: 'male' });
     const gapin = r.majorLuck!.cycles.find((c) => c.pillar === '갑인')!;
 
     expect(gapin.startAge).toBe(65);
@@ -265,7 +265,7 @@ describe('correctPillars - 대운(大運)', () => {
   });
 
   it('임신년 여성 → 역행, 월주 정미에서 뒤로(병오·을사…)', () => {
-    const r = correctPillars({ ...NAMWOO, gender: 'female' });
+    const r = correctPillars({ ...CHART, gender: 'female' });
 
     expect(r.majorLuck!.direction).toBe('역행');
     // 역행 대운수: 이전 절(소서 7/7)까지 약 16일 ÷ 3 = 5.
@@ -274,7 +274,7 @@ describe('correctPillars - 대운(大運)', () => {
   });
 
   it('성별 미제공이면 majorLuck은 null, 나머지 출력은 불변', () => {
-    const r = correctPillars(NAMWOO);
+    const r = correctPillars(CHART);
 
     expect(r.majorLuck).toBeNull();
     expect(r.monthPillar).toBe('정미');
