@@ -559,6 +559,39 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 **반환값:** `number` (1~12)
 
+## 엔진 구조 (src/correction/)
+
+절기 경계 보정 명식 계산(`correctPillars`)은 `src/correction/` 아래 7개 모듈로 구성됩니다. 작업 시 어느 파일을 봐야 할지 기준으로 삼으세요.
+
+| 파일 | 역할 |
+|------|------|
+| `correct-pillars.ts` | 입력(`BirthInput`)·출력(`CorrectedSaju`) 타입, 오행 분포, `correctPillars` 오케스트레이션(조립). `trueSolarParts`는 import 경로 호환을 위해 여기서 re-export |
+| `ten-gods.ts` | 십성(十星) 판정 — 천간 오행·지장간·상생상극 테이블 + 판정 함수(`tenGod`, `branchGod`, `hiddenGods`) |
+| `major-luck.ts` | 대운(大運) 계산 — 방향(양남음녀 순행)·대운수·10주기 간지와 십성 |
+| `true-solar-time.ts` | 진태양시 계산 — astronomy-engine의 HourAngle 사용(경도 보정+균시차 자동 포함) |
+| `month-year-pillar.ts` | 월주·연주 판정 — 절기 절입(분 단위, UTC 비교) 경계 보정, 年上起月法 |
+| `solar-terms-table.ts` | 절기 테이블 공유 모듈 — `solar-terms-precise.json` 접근(`TERMS`, `termUtcMs`) |
+| `timezone.ts` | 시간대 변환 — 출생 도시(IANA 시간대) 벽시계 → UTC (`Intl` 기반, 과거 DST 자동 반영) |
+
+### 의존 관계
+
+`→`는 import 방향입니다. 런타임 순환은 없습니다.
+
+- `correct-pillars` → `timezone`, `ten-gods`, `month-year-pillar`, `major-luck`, `true-solar-time` (+ `core/saju`, `core/solar-lunar-converter`, `data/sixty-pillars`)
+- `month-year-pillar` → `solar-terms-table`, `ten-gods` (+ `core/saju`)
+- `major-luck` → `solar-terms-table`, `ten-gods` (+ `data/sixty-pillars`. `CorrectedSaju` 역참조는 `import type`이라 런타임 순환 없음)
+- `true-solar-time` → astronomy-engine
+- `solar-terms-table` → `solar-terms-precise.json`
+- `ten-gods`, `timezone` → 내부 의존 없음(리프 모듈)
+
+### correctPillars 출력 (CorrectedSaju)
+
+- **4기둥**: 연·월·일·시주 (한글/한자. 시간 모름이면 시주는 정오 가정 참고용, `timeUnknown` 플래그)
+- **일간(dayMaster)**: 일주 천간 (한글·한자·오행)
+- **오행 분포(elements)**: 천간·지지의 목·화·토·금·수 개수 (시간 모름이면 시주 제외)
+- **십성(tenGods)**: 천간(heavenly)·지지 대표(earthly)·지장간(hidden) 각각에 일간 기준 십성
+- **대운(majorLuck)**: 방향·대운수·10주기 간지와 십성 (성별 미제공 시 null)
+
 ## 지원 범위
 
 | 항목 | 범위 |
