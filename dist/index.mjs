@@ -5309,6 +5309,71 @@ function zonedDateTimeToUtc(year, month, day, hour, minute, timeZone) {
     return new Date(utcMs);
 }
 
+// ─── 십성(十星) ─────────────────────────────────────────────────────────────
+// 일간 기준 오행 생극 + 음양 동이(同異)로 대상 천간의 십성을 판정한다.
+// 지지 대표 십성은 '위치 음양'이 아니라 정기(지장간 본기) 천간의 음양으로 판정한다
+// (예: 일지 자(子)는 위치상 양이지만 정기 계(癸)가 음수라 경금 일간 기준 상관).
+const STEMS = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+/** 천간 → 오행. */
+const STEM_ELEMENT = {
+    갑: '목', 을: '목', 병: '화', 정: '화', 무: '토',
+    기: '토', 경: '금', 신: '금', 임: '수', 계: '수',
+};
+/** 지지 → 지장간(여기·중기·정기 순. 마지막=정기=대표). */
+const HIDDEN_STEMS = {
+    자: ['임', '계'],
+    축: ['계', '신', '기'],
+    인: ['무', '병', '갑'],
+    묘: ['갑', '을'],
+    진: ['을', '계', '무'],
+    사: ['무', '경', '병'],
+    오: ['병', '기', '정'],
+    미: ['정', '을', '기'],
+    신: ['무', '임', '경'],
+    유: ['경', '신'],
+    술: ['신', '정', '무'],
+    해: ['무', '갑', '임'],
+};
+/** 오행 상생: 생하는 대상. 목→화→토→금→수→목. */
+const GENERATES = {
+    목: '화', 화: '토', 토: '금', 금: '수', 수: '목',
+};
+/** 오행 상극: 극하는 대상. 목극토, 토극수, 수극화, 화극금, 금극목. */
+const CONTROLS = {
+    목: '토', 토: '수', 수: '화', 화: '금', 금: '목',
+};
+/** 천간 음양: 정렬 순서(갑을병정…) 짝수 index=양, 홀수=음. */
+function isYangStem(stem) {
+    return STEMS.indexOf(stem) % 2 === 0;
+}
+/**
+ * 일간(dayMaster) 기준으로 대상 천간의 십성을 판정한다.
+ * (1)오행 생극 관계 + (2)음양 동이로 10종 중 하나를 반환.
+ */
+function tenGod(dayMaster, target) {
+    const de = STEM_ELEMENT[dayMaster];
+    const te = STEM_ELEMENT[target];
+    const same = isYangStem(dayMaster) === isYangStem(target);
+    if (de === te)
+        return same ? '비견' : '겁재';
+    if (GENERATES[de] === te)
+        return same ? '식신' : '상관'; // 일간이 생하는
+    if (CONTROLS[de] === te)
+        return same ? '편재' : '정재'; // 일간이 극하는
+    if (CONTROLS[te] === de)
+        return same ? '편관' : '정관'; // 일간을 극하는
+    return same ? '편인' : '정인'; // 일간을 생하는 (GENERATES[te] === de)
+}
+/** 지지의 지장간 전부에 십성을 매긴다. */
+function hiddenGods(dayMaster, branch) {
+    return (HIDDEN_STEMS[branch] ?? []).map((stem) => ({ stem, god: tenGod(dayMaster, stem) }));
+}
+/** 지지 대표 십성 = 정기(지장간 마지막) 천간 기준. */
+function branchGod(dayMaster, branch) {
+    const hidden = HIDDEN_STEMS[branch];
+    return tenGod(dayMaster, hidden[hidden.length - 1]);
+}
+
 var SOLAR_TERMS = {
 	"1900": [
 	{
@@ -14723,7 +14788,6 @@ const SAJU_MONTH_BY_TERM = {
     대설: 11,
     소한: 12,
 };
-const STEMS = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
 /** 年上起月法: 연간(0~9)에 따른 인월(寅月)의 60갑자 시작 id. */
 const MONTH_PILLAR_BASE = [2, 14, 26, 38, 50];
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
@@ -14816,69 +14880,6 @@ function elementDistribution(pillars) {
         dist[p.dizhi.element]++;
     }
     return dist;
-}
-// ─── 십성(十星) ─────────────────────────────────────────────────────────────
-// 일간 기준 오행 생극 + 음양 동이(同異)로 대상 천간의 십성을 판정한다.
-// 지지 대표 십성은 '위치 음양'이 아니라 정기(지장간 본기) 천간의 음양으로 판정한다
-// (예: 일지 자(子)는 위치상 양이지만 정기 계(癸)가 음수라 경금 일간 기준 상관).
-/** 천간 → 오행. */
-const STEM_ELEMENT = {
-    갑: '목', 을: '목', 병: '화', 정: '화', 무: '토',
-    기: '토', 경: '금', 신: '금', 임: '수', 계: '수',
-};
-/** 지지 → 지장간(여기·중기·정기 순. 마지막=정기=대표). */
-const HIDDEN_STEMS = {
-    자: ['임', '계'],
-    축: ['계', '신', '기'],
-    인: ['무', '병', '갑'],
-    묘: ['갑', '을'],
-    진: ['을', '계', '무'],
-    사: ['무', '경', '병'],
-    오: ['병', '기', '정'],
-    미: ['정', '을', '기'],
-    신: ['무', '임', '경'],
-    유: ['경', '신'],
-    술: ['신', '정', '무'],
-    해: ['무', '갑', '임'],
-};
-/** 오행 상생: 생하는 대상. 목→화→토→금→수→목. */
-const GENERATES = {
-    목: '화', 화: '토', 토: '금', 금: '수', 수: '목',
-};
-/** 오행 상극: 극하는 대상. 목극토, 토극수, 수극화, 화극금, 금극목. */
-const CONTROLS = {
-    목: '토', 토: '수', 수: '화', 화: '금', 금: '목',
-};
-/** 천간 음양: 정렬 순서(갑을병정…) 짝수 index=양, 홀수=음. */
-function isYangStem(stem) {
-    return STEMS.indexOf(stem) % 2 === 0;
-}
-/**
- * 일간(dayMaster) 기준으로 대상 천간의 십성을 판정한다.
- * (1)오행 생극 관계 + (2)음양 동이로 10종 중 하나를 반환.
- */
-function tenGod(dayMaster, target) {
-    const de = STEM_ELEMENT[dayMaster];
-    const te = STEM_ELEMENT[target];
-    const same = isYangStem(dayMaster) === isYangStem(target);
-    if (de === te)
-        return same ? '비견' : '겁재';
-    if (GENERATES[de] === te)
-        return same ? '식신' : '상관'; // 일간이 생하는
-    if (CONTROLS[de] === te)
-        return same ? '편재' : '정재'; // 일간이 극하는
-    if (CONTROLS[te] === de)
-        return same ? '편관' : '정관'; // 일간을 극하는
-    return same ? '편인' : '정인'; // 일간을 생하는 (GENERATES[te] === de)
-}
-/** 지지의 지장간 전부에 십성을 매긴다. */
-function hiddenGods(dayMaster, branch) {
-    return (HIDDEN_STEMS[branch] ?? []).map((stem) => ({ stem, god: tenGod(dayMaster, stem) }));
-}
-/** 지지 대표 십성 = 정기(지장간 마지막) 천간 기준. */
-function branchGod(dayMaster, branch) {
-    const hidden = HIDDEN_STEMS[branch];
-    return tenGod(dayMaster, hidden[hidden.length - 1]);
 }
 // ─── 대운(大運) ─────────────────────────────────────────────────────────────
 // 방향은 연간 음양+성별(양남·음녀 순행), 대운수는 출생~인접 절(節) 일수÷3(3일=1년),
