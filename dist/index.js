@@ -14742,6 +14742,75 @@ var SOLAR_TERMS = {
 };
 
 /**
+ * 검증된 자체 절기 테이블(solar-terms-precise.json) 공용 접근 모듈.
+ * 연주·월주 판정(correct-pillars)과 대운(major-luck)이 함께 쓴다.
+ */
+const TERMS = SOLAR_TERMS;
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+/** 절기 테이블의 KST 벽시계 문자열을 UTC 순간(ms)으로 환산. */
+function termUtcMs(kst) {
+    const [datePart, timePart] = kst.split('T');
+    const [y, m, d] = datePart.split('-').map(Number);
+    const [hh, mm] = timePart.split(':').map(Number);
+    return Date.UTC(y, m - 1, d, hh, mm) - KST_OFFSET_MS;
+}
+
+// ─── 대운(大運) ─────────────────────────────────────────────────────────────
+// 방향은 연간 음양+성별(양남·음녀 순행), 대운수는 출생~인접 절(節) 일수÷3(3일=1년),
+// 간지는 월주에서 60갑자 순/역행 나열. 절기 테이블은 연 12개 節만 담고 있어
+// 중기(中氣) 필터가 필요 없다.
+const MAJOR_LUCK_CYCLE_COUNT = 10; // 약 100세 전후까지 나열
+const DAYS_PER_LUCK_YEAR = 3; // 3일 = 1년
+const DAY_MS = 86400000;
+/** 출생 직전(prev)·직후(next) 절(節)의 입절 UTC(ms)를 구한다. */
+function adjacentTermUtcs(birthUtcMs, year) {
+    const utcs = [];
+    for (const y of [year - 1, year, year + 1]) {
+        const list = TERMS[String(y)];
+        if (!list)
+            continue;
+        for (const t of list)
+            utcs.push(termUtcMs(t.kst));
+    }
+    utcs.sort((a, b) => a - b);
+    let prev = utcs[0];
+    let next = utcs[utcs.length - 1];
+    for (const u of utcs) {
+        if (u <= birthUtcMs)
+            prev = u;
+        else {
+            next = u;
+            break;
+        }
+    }
+    return { prev, next };
+}
+/** 대운 조립: 방향 → 대운수 → 간지 나열(십성 포함). */
+function buildMajorLuck(gender, yearStem, monthId, dayMaster, birthUtcMs, year) {
+    // 양년생 남성·음년생 여성 → 순행, 그 외 → 역행.
+    const forward = isYangStem(yearStem) === (gender === 'male');
+    // 대운수: 순행은 다음 절, 역행은 이전 절까지의 일수 ÷ 3. 반올림(나머지 1 버림·2 올림),
+    // 절입 직전·직후 출생으로 0이 나오면 관례대로 1세 시작.
+    const { prev, next } = adjacentTermUtcs(birthUtcMs, year);
+    const diffDays = (forward ? next - birthUtcMs : birthUtcMs - prev) / DAY_MS;
+    const startAge = Math.max(1, Math.round(diffDays / DAYS_PER_LUCK_YEAR));
+    const cycles = [];
+    for (let i = 1; i <= MAJOR_LUCK_CYCLE_COUNT; i++) {
+        const p = getPillarById((((monthId + (forward ? i : -i)) % 60) + 60) % 60);
+        const age = startAge + (i - 1) * 10;
+        cycles.push({
+            startAge: age,
+            endAge: age + 9,
+            pillar: p.combined.hangul,
+            pillarHanja: p.combined.hanja,
+            heavenlyGod: tenGod(dayMaster, p.tiangan.hangul),
+            earthlyGod: branchGod(dayMaster, p.dizhi.hangul),
+        });
+    }
+    return { direction: forward ? '순행' : '역행', startAge, cycles };
+}
+
+/**
  * 절기 경계 월주·연주 보정 래퍼.
  *
  * 월주 데이터에는 3개의 레이어가 있다(측정으로 확인):
@@ -14774,7 +14843,6 @@ var SOLAR_TERMS = {
  * - 일주·시주는 진태양시 달력값으로 산출한다(엔진 KST 보정은 끈다).
  * - 엔진/`src/data` 미변경. 보정은 엔진 출력 위에 얹는 별도 레이어다.
  */
-const TERMS = SOLAR_TERMS;
 /** 절기명 → 사주월(1=인월 … 11=자월, 12=축월). */
 const SAJU_MONTH_BY_TERM = {
     입춘: 1,
@@ -14792,14 +14860,6 @@ const SAJU_MONTH_BY_TERM = {
 };
 /** 年上起月法: 연간(0~9)에 따른 인월(寅月)의 60갑자 시작 id. */
 const MONTH_PILLAR_BASE = [2, 14, 26, 38, 50];
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
-/** 절기 테이블의 KST 벽시계 문자열을 UTC 순간(ms)으로 환산. */
-function termUtcMs(kst) {
-    const [datePart, timePart] = kst.split('T');
-    const [y, m, d] = datePart.split('-').map(Number);
-    const [hh, mm] = timePart.split(':').map(Number);
-    return Date.UTC(y, m - 1, d, hh, mm) - KST_OFFSET_MS;
-}
 /** 年上起月法으로 월주 60갑자 id를 구한다. */
 function monthPillarId(yearStem, sajuMonth) {
     const base = MONTH_PILLAR_BASE[STEMS.indexOf(yearStem) % 5];
@@ -14882,60 +14942,6 @@ function elementDistribution(pillars) {
         dist[p.dizhi.element]++;
     }
     return dist;
-}
-// ─── 대운(大運) ─────────────────────────────────────────────────────────────
-// 방향은 연간 음양+성별(양남·음녀 순행), 대운수는 출생~인접 절(節) 일수÷3(3일=1년),
-// 간지는 월주에서 60갑자 순/역행 나열. 절기 테이블은 연 12개 節만 담고 있어
-// 중기(中氣) 필터가 필요 없다.
-const MAJOR_LUCK_CYCLE_COUNT = 10; // 약 100세 전후까지 나열
-const DAYS_PER_LUCK_YEAR = 3; // 3일 = 1년
-const DAY_MS = 86400000;
-/** 출생 직전(prev)·직후(next) 절(節)의 입절 UTC(ms)를 구한다. */
-function adjacentTermUtcs(birthUtcMs, year) {
-    const utcs = [];
-    for (const y of [year - 1, year, year + 1]) {
-        const list = TERMS[String(y)];
-        if (!list)
-            continue;
-        for (const t of list)
-            utcs.push(termUtcMs(t.kst));
-    }
-    utcs.sort((a, b) => a - b);
-    let prev = utcs[0];
-    let next = utcs[utcs.length - 1];
-    for (const u of utcs) {
-        if (u <= birthUtcMs)
-            prev = u;
-        else {
-            next = u;
-            break;
-        }
-    }
-    return { prev, next };
-}
-/** 대운 조립: 방향 → 대운수 → 간지 나열(십성 포함). */
-function buildMajorLuck(gender, yearStem, monthId, dayMaster, birthUtcMs, year) {
-    // 양년생 남성·음년생 여성 → 순행, 그 외 → 역행.
-    const forward = isYangStem(yearStem) === (gender === 'male');
-    // 대운수: 순행은 다음 절, 역행은 이전 절까지의 일수 ÷ 3. 반올림(나머지 1 버림·2 올림),
-    // 절입 직전·직후 출생으로 0이 나오면 관례대로 1세 시작.
-    const { prev, next } = adjacentTermUtcs(birthUtcMs, year);
-    const diffDays = (forward ? next - birthUtcMs : birthUtcMs - prev) / DAY_MS;
-    const startAge = Math.max(1, Math.round(diffDays / DAYS_PER_LUCK_YEAR));
-    const cycles = [];
-    for (let i = 1; i <= MAJOR_LUCK_CYCLE_COUNT; i++) {
-        const p = getPillarById((((monthId + (forward ? i : -i)) % 60) + 60) % 60);
-        const age = startAge + (i - 1) * 10;
-        cycles.push({
-            startAge: age,
-            endAge: age + 9,
-            pillar: p.combined.hangul,
-            pillarHanja: p.combined.hanja,
-            heavenlyGod: tenGod(dayMaster, p.tiangan.hangul),
-            earthlyGod: branchGod(dayMaster, p.dizhi.hangul),
-        });
-    }
-    return { direction: forward ? '순행' : '역행', startAge, cycles };
 }
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.
