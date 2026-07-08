@@ -32,7 +32,6 @@
  * - 엔진/`src/data` 미변경. 보정은 엔진 출력 위에 얹는 별도 레이어다.
  */
 
-import * as Astronomy from 'astronomy-engine';
 import { calculateSaju, type SajuResult } from '../core/saju';
 import { lunarToSolar } from '../core/solar-lunar-converter';
 import { getPillarById, getPillarByHangul } from '../data/sixty-pillars';
@@ -40,6 +39,10 @@ import { zonedDateTimeToUtc } from './timezone';
 import { STEMS, tenGod, hiddenGods, branchGod } from './ten-gods';
 import { TERMS, termUtcMs } from './solar-terms-table';
 import { buildMajorLuck } from './major-luck';
+import { trueSolarParts } from './true-solar-time';
+
+// 진태양시 계산은 true-solar-time.ts로 이동. 기존 import 경로 호환을 위해 re-export.
+export { trueSolarParts };
 
 /** 절기명 → 사주월(1=인월 … 11=자월, 12=축월). */
 const SAJU_MONTH_BY_TERM: Readonly<Record<string, number>> = {
@@ -86,41 +89,6 @@ function resolveSajuMonth(birthUtcMs: number, year: number): number {
   }
   // 데이터 시작 이전(예: 1900-01 소한 전)에는 직전 대설(자월) 기준으로 폴백.
   return governing ? SAJU_MONTH_BY_TERM[governing] : 11;
-}
-
-interface CalendarParts {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-  minute: number;
-}
-
-/**
- * 출생 순간(UTC)과 출생지 좌표로 진태양시의 달력 순간을 구한다.
- *
- * HourAngle(태양)에는 경도 보정과 균시차(EoT)가 자동 포함되므로 별도 EoT 공식이 없다.
- * tstInstant의 UTC 달력 필드를 읽으면 자정 넘김(전날/다음날)이 자동 처리된다.
- */
-export function trueSolarParts(utc: Date, latitude: number, longitude: number): CalendarParts {
-  const observer = new Astronomy.Observer(latitude, longitude, 0);
-  const hourAngle = Astronomy.HourAngle(Astronomy.Body.Sun, utc, observer); // 0~24
-  const tstHours = (hourAngle + 12) % 24; // 진태양시 시각(0~24)
-
-  const utcHourFrac =
-    utc.getUTCHours() + utc.getUTCMinutes() / 60 + utc.getUTCSeconds() / 3600;
-  let offsetHours = tstHours - utcHourFrac;
-  if (offsetHours > 12) offsetHours -= 24; // (-12, 12]로 wrap
-  if (offsetHours <= -12) offsetHours += 24;
-
-  const tstInstant = new Date(utc.getTime() + offsetHours * 3600 * 1000);
-  return {
-    year: tstInstant.getUTCFullYear(),
-    month: tstInstant.getUTCMonth() + 1,
-    day: tstInstant.getUTCDate(),
-    hour: tstInstant.getUTCHours(),
-    minute: tstInstant.getUTCMinutes(),
-  };
 }
 
 /**

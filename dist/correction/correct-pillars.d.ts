@@ -31,20 +31,8 @@
  * - 일주·시주는 진태양시 달력값으로 산출한다(엔진 KST 보정은 끈다).
  * - 엔진/`src/data` 미변경. 보정은 엔진 출력 위에 얹는 별도 레이어다.
  */
-interface CalendarParts {
-    year: number;
-    month: number;
-    day: number;
-    hour: number;
-    minute: number;
-}
-/**
- * 출생 순간(UTC)과 출생지 좌표로 진태양시의 달력 순간을 구한다.
- *
- * HourAngle(태양)에는 경도 보정과 균시차(EoT)가 자동 포함되므로 별도 EoT 공식이 없다.
- * tstInstant의 UTC 달력 필드를 읽으면 자정 넘김(전날/다음날)이 자동 처리된다.
- */
-export declare function trueSolarParts(utc: Date, latitude: number, longitude: number): CalendarParts;
+import { trueSolarParts } from './true-solar-time';
+export { trueSolarParts };
 export interface BirthInput {
     /** 생년월일 (calendar 기준) */
     year: number;
@@ -149,5 +137,4 @@ export interface CorrectedSaju {
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.
  */
 export declare function correctPillars(input: BirthInput): CorrectedSaju;
-export {};
 //# sourceMappingURL=correct-pillars.d.ts.map
