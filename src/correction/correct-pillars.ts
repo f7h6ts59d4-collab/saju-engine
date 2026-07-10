@@ -40,6 +40,7 @@ import { tenGod, hiddenGods, branchGod } from './ten-gods';
 import { monthPillarId, resolveSajuMonth, resolveYearPillar } from './month-year-pillar';
 import { buildMajorLuck } from './major-luck';
 import { trueSolarParts } from './true-solar-time';
+import { computeSinsal, Sinsal } from './sinsal';
 
 // 진태양시 계산은 true-solar-time.ts로 이동. 기존 import 경로 호환을 위해 re-export.
 export { trueSolarParts };
@@ -123,6 +124,8 @@ export interface CorrectedSaju {
       earthlyGod: string;
     }[];
   } | null;
+  /** 신살(神殺): 12신살 + 개별 신살. 겹침 허용(positions로 구분). 시간 모름이면 시주 제외. */
+  sinsal: Sinsal;
 }
 
 /** 기둥 한글 배열의 천간·지지 오행을 세어 분포를 만든다. */
@@ -221,6 +224,15 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     ? buildMajorLuck(input.gender, yp.hangul.charAt(0), mp.id, dm, birthUtcMs, year)
     : null;
 
+  // 11. 신살(神殺): 보정된 4기둥 간지로 12신살·개별 신살을 판정한다.
+  //     시간 모름이면 시주는 판정에서 제외(twelve.hour = null, stars에 시주 없음).
+  const sinsal = computeSinsal(
+    yp.hangul,
+    mp.combined.hangul,
+    tstBase.dayPillar,
+    hourKnown ? tstBase.hourPillar : null,
+  );
+
   return {
     yearPillar: yp.hangul,
     yearPillarHanja: yp.hanja,
@@ -235,5 +247,6 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     elements,
     tenGods,
     majorLuck,
+    sinsal,
   };
 }

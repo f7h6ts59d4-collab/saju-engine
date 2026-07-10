@@ -32,6 +32,7 @@
  * - 엔진/`src/data` 미변경. 보정은 엔진 출력 위에 얹는 별도 레이어다.
  */
 import { trueSolarParts } from './true-solar-time';
+import { Sinsal } from './sinsal';
 export { trueSolarParts };
 export interface BirthInput {
     /** 생년월일 (calendar 기준) */
@@ -132,6 +133,8 @@ export interface CorrectedSaju {
             earthlyGod: string;
         }[];
     } | null;
+    /** 신살(神殺): 12신살 + 개별 신살. 겹침 허용(positions로 구분). 시간 모름이면 시주 제외. */
+    sinsal: Sinsal;
 }
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.
