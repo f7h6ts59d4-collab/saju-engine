@@ -131,10 +131,19 @@ export interface CorrectedSaju {
             heavenlyGod: string;
             /** 지지 십성 (정기 천간 기준). */
             earthlyGod: string;
+            /** 대운 지지의 12운성 (일간 기준). */
+            lifeStage: string;
         }[];
     } | null;
     /** 신살(神殺): 12신살 + 개별 신살. 겹침 허용(positions로 구분). 시간 모름이면 시주 제외. */
     sinsal: Sinsal;
+    /** 12운성(十二運星): 일간이 각 지지에서 갖는 기세 단계. 시간 모름이면 시주는 null. */
+    twelveStages: {
+        year: string;
+        month: string;
+        day: string;
+        hour: string | null;
+    };
 }
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.

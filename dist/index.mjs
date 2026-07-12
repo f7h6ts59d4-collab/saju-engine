@@ -2538,7 +2538,7 @@ function zonedDateTimeToUtc(year, month, day, hour, minute, timeZone) {
 // 일간 기준 오행 생극 + 음양 동이(同異)로 대상 천간의 십성을 판정한다.
 // 지지 대표 십성은 '위치 음양'이 아니라 정기(지장간 본기) 천간의 음양으로 판정한다
 // (예: 일지 자(子)는 위치상 양이지만 정기 계(癸)가 음수라 경금 일간 기준 상관).
-const STEMS = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const STEMS$1 = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
 /** 천간 → 오행. */
 const STEM_ELEMENT = {
     갑: '목', 을: '목', 병: '화', 정: '화', 무: '토',
@@ -2569,7 +2569,7 @@ const CONTROLS = {
 };
 /** 천간 음양: 정렬 순서(갑을병정…) 짝수 index=양, 홀수=음. */
 function isYangStem(stem) {
-    return STEMS.indexOf(stem) % 2 === 0;
+    return STEMS$1.indexOf(stem) % 2 === 0;
 }
 /**
  * 일간(dayMaster) 기준으로 대상 천간의 십성을 판정한다.
@@ -11999,7 +11999,7 @@ const SAJU_MONTH_BY_TERM = {
 const MONTH_PILLAR_BASE = [2, 14, 26, 38, 50];
 /** 年上起月法으로 월주 60갑자 id를 구한다. */
 function monthPillarId(yearStem, sajuMonth) {
-    const base = MONTH_PILLAR_BASE[STEMS.indexOf(yearStem) % 5];
+    const base = MONTH_PILLAR_BASE[STEMS$1.indexOf(yearStem) % 5];
     return (base + sajuMonth - 1) % 60;
 }
 /**
@@ -12042,6 +12042,28 @@ function resolveYearPillar(base, year, month, day, birthUtcMs) {
         }
     }
     return { hangul: base.yearPillar, hanja: base.yearPillarHanja };
+}
+
+// ─── 12운성(十二運星) ───────────────────────────────────────────────────────
+// 일간이 각 지지에서 갖는 기운의 강약을 생로병사 12단계로 매긴다.
+// 일간의 장생지(화토동법: 무는 병과, 기는 정과 동일)에서 시작해 양간은 지지
+// 순행, 음간은 역행으로 배치한다. 표는 명세(docs/specs/twelve-stages-spec.md)
+// 그대로이며 5명식 20셀 대조 검증 완료. 원국·대운 양쪽에서 재사용하는 리프 모듈.
+const STEMS = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const BRANCHES$1 = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+/** 12단계: 장생지에서 진행 방향으로 순서대로 배치된다. */
+const STAGES = ['장생', '목욕', '관대', '건록', '제왕', '쇠', '병', '사', '묘', '절', '태', '양'];
+/** 일간 → 장생지 (화토동법: 무=병, 기=정). */
+const BIRTH_BRANCH = {
+    갑: '해', 을: '오', 병: '인', 정: '유', 무: '인',
+    기: '유', 경: '사', 신: '자', 임: '신', 계: '묘',
+};
+/** 일간(dayStem) 기준 대상 지지(branch)의 12운성. 양간 순행·음간 역행. */
+function lifeStage(dayStem, branch) {
+    const start = BRANCHES$1.indexOf(BIRTH_BRANCH[dayStem]);
+    const forward = STEMS.indexOf(dayStem) % 2 === 0; // 갑·병·무·경·임 = 양간
+    const steps = (BRANCHES$1.indexOf(branch) - start) * (forward ? 1 : -1);
+    return STAGES[(steps + 12) % 12];
 }
 
 // ─── 대운(大運) ─────────────────────────────────────────────────────────────
@@ -12094,6 +12116,7 @@ function buildMajorLuck(gender, yearStem, monthId, dayMaster, birthUtcMs, year) 
             pillarHanja: p.combined.hanja,
             heavenlyGod: tenGod(dayMaster, p.tiangan.hangul),
             earthlyGod: branchGod(dayMaster, p.dizhi.hangul),
+            lifeStage: lifeStage(dayMaster, p.dizhi.hangul),
         });
     }
     return { direction: forward ? '순행' : '역행', startAge, cycles };
@@ -15144,6 +15167,14 @@ function correctPillars(input) {
     // 11. 신살(神殺): 보정된 4기둥 간지로 12신살·개별 신살을 판정한다.
     //     시간 모름이면 시주는 판정에서 제외(twelve.hour = null, stars에 시주 없음).
     const sinsal = computeSinsal(yp.hangul, mp.combined.hangul, tstBase.dayPillar, hourKnown ? tstBase.hourPillar : null);
+    // 12. 12운성(十二運星): 일간 기준으로 4기둥 지지(일지 포함)에 매긴다.
+    //     시간 모름이면 시주는 null.
+    const twelveStages = {
+        year: lifeStage(dm, yp.hangul.charAt(1)),
+        month: lifeStage(dm, mp.combined.hangul.charAt(1)),
+        day: lifeStage(dm, tstBase.dayPillar.charAt(1)),
+        hour: hourKnown ? lifeStage(dm, hourBranch) : null,
+    };
     return {
         yearPillar: yp.hangul,
         yearPillarHanja: yp.hanja,
@@ -15159,6 +15190,7 @@ function correctPillars(input) {
         tenGods,
         majorLuck,
         sinsal,
+        twelveStages,
     };
 }
 

@@ -6,6 +6,7 @@
 import { getPillarById } from '../data/sixty-pillars';
 import { isYangStem, tenGod, branchGod } from './ten-gods';
 import { TERMS, termUtcMs } from './solar-terms-table';
+import { lifeStage } from './twelve-stages';
 import type { CorrectedSaju } from './correct-pillars';
 
 const MAJOR_LUCK_CYCLE_COUNT = 10; // 약 100세 전후까지 나열
@@ -63,6 +64,7 @@ export function buildMajorLuck(
       pillarHanja: p.combined.hanja,
       heavenlyGod: tenGod(dayMaster, p.tiangan.hangul),
       earthlyGod: branchGod(dayMaster, p.dizhi.hangul),
+      lifeStage: lifeStage(dayMaster, p.dizhi.hangul),
     });
   }
 
