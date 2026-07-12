@@ -561,7 +561,7 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 ## 엔진 구조 (src/correction/)
 
-절기 경계 보정 명식 계산(`correctPillars`)은 `src/correction/` 아래 8개 모듈로 구성됩니다. 작업 시 어느 파일을 봐야 할지 기준으로 삼으세요.
+절기 경계 보정 명식 계산(`correctPillars`)은 `src/correction/` 아래 9개 모듈로 구성됩니다. 작업 시 어느 파일을 봐야 할지 기준으로 삼으세요.
 
 | 파일 | 역할 |
 |------|------|
@@ -569,6 +569,7 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 | `ten-gods.ts` | 십성(十星) 판정 — 천간 오행·지장간·상생상극 테이블 + 판정 함수(`tenGod`, `branchGod`, `hiddenGods`) |
 | `major-luck.ts` | 대운(大運) 계산 — 방향(양남음녀 순행)·대운수·10주기 간지와 십성 |
 | `sinsal.ts` | 신살(神殺) 판정 — 12신살(연지·일지 삼합 혼합 기준) + 개별 신살 18종. 규칙표는 포스텔러 관측 검증값 하드코딩(`computeSinsal`) |
+| `twelve-stages.ts` | 12운성(十二運星) 판정 — 장생지 표(화토동법) + 양간 순행·음간 역행 계산(`lifeStage`) |
 | `true-solar-time.ts` | 진태양시 계산 — astronomy-engine의 HourAngle 사용(경도 보정+균시차 자동 포함) |
 | `month-year-pillar.ts` | 월주·연주 판정 — 절기 절입(분 단위, UTC 비교) 경계 보정, 年上起月法 |
 | `solar-terms-table.ts` | 절기 테이블 공유 모듈 — `solar-terms-precise.json` 접근(`TERMS`, `termUtcMs`) |
@@ -578,12 +579,12 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 `→`는 import 방향입니다. 런타임 순환은 없습니다.
 
-- `correct-pillars` → `timezone`, `ten-gods`, `sinsal`, `month-year-pillar`, `major-luck`, `true-solar-time` (+ `core/saju`, `core/solar-lunar-converter`, `data/sixty-pillars`)
+- `correct-pillars` → `timezone`, `ten-gods`, `sinsal`, `twelve-stages`, `month-year-pillar`, `major-luck`, `true-solar-time` (+ `core/saju`, `core/solar-lunar-converter`, `data/sixty-pillars`)
 - `month-year-pillar` → `solar-terms-table`, `ten-gods` (+ `core/saju`)
-- `major-luck` → `solar-terms-table`, `ten-gods` (+ `data/sixty-pillars`. `CorrectedSaju` 역참조는 `import type`이라 런타임 순환 없음)
+- `major-luck` → `solar-terms-table`, `ten-gods`, `twelve-stages` (+ `data/sixty-pillars`. `CorrectedSaju` 역참조는 `import type`이라 런타임 순환 없음)
 - `true-solar-time` → astronomy-engine
 - `solar-terms-table` → `solar-terms-precise.json`
-- `ten-gods`, `timezone`, `sinsal` → 내부 의존 없음(리프 모듈)
+- `ten-gods`, `timezone`, `sinsal`, `twelve-stages` → 내부 의존 없음(리프 모듈)
 
 ### correctPillars 출력 (CorrectedSaju)
 
@@ -591,8 +592,9 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 - **일간(dayMaster)**: 일주 천간 (한글·한자·오행)
 - **오행 분포(elements)**: 천간·지지의 목·화·토·금·수 개수 (시간 모름이면 시주 제외)
 - **십성(tenGods)**: 천간(heavenly)·지지 대표(earthly)·지장간(hidden) 각각에 일간 기준 십성
-- **대운(majorLuck)**: 방향·대운수·10주기 간지와 십성 (성별 미제공 시 null)
+- **대운(majorLuck)**: 방향·대운수·10주기 간지와 십성·12운성(`lifeStage`) (성별 미제공 시 null)
 - **신살(sinsal)**: 12신살(`twelve`) + 개별 신살(`stars`, 성립 기둥 `positions`) — 겹침 허용, 시간 모름이면 시주 제외
+- **12운성(twelveStages)**: 일간 기준 4기둥 지지의 기세 단계 (시간 모름이면 시주 null)
 
 ## 지원 범위
 
