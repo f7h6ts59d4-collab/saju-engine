@@ -42,6 +42,7 @@ import { buildMajorLuck } from './major-luck';
 import { trueSolarParts } from './true-solar-time';
 import { computeSinsal, Sinsal } from './sinsal';
 import { lifeStage } from './twelve-stages';
+import { computeRelations, computeGongmang, Relation, Gongmang } from './relations';
 
 // 진태양시 계산은 true-solar-time.ts로 이동. 기존 import 경로 호환을 위해 re-export.
 export { trueSolarParts };
@@ -136,6 +137,10 @@ export interface CorrectedSaju {
     day: string;
     hour: string | null;
   };
+  /** 합충형파해(合沖刑破害): 천간·지지 상호관계. 겹침 허용, 시간 모름이면 시주 제외. */
+  relations: Relation[];
+  /** 공망(空亡): 일주 순중공망. 연·월·시지에서 판정(일지 제외). */
+  gongmang: Gongmang;
 }
 
 /** 기둥 한글 배열의 천간·지지 오행을 세어 분포를 만든다. */
@@ -252,6 +257,20 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     hour: hourKnown ? lifeStage(dm, hourBranch) : null,
   };
 
+  // 13. 합충형파해·공망: 보정된 4기둥 간지로 판정. 시간 모름이면 시주 제외.
+  const relations = computeRelations(
+    yp.hangul,
+    mp.combined.hangul,
+    tstBase.dayPillar,
+    hourKnown ? tstBase.hourPillar : null,
+  );
+  const gongmang = computeGongmang(
+    yp.hangul,
+    mp.combined.hangul,
+    tstBase.dayPillar,
+    hourKnown ? tstBase.hourPillar : null,
+  );
+
   return {
     yearPillar: yp.hangul,
     yearPillarHanja: yp.hanja,
@@ -268,5 +287,7 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     majorLuck,
     sinsal,
     twelveStages,
+    relations,
+    gongmang,
   };
 }

@@ -33,6 +33,7 @@
  */
 import { trueSolarParts } from './true-solar-time';
 import { Sinsal } from './sinsal';
+import { Relation, Gongmang } from './relations';
 export { trueSolarParts };
 export interface BirthInput {
     /** 생년월일 (calendar 기준) */
@@ -144,6 +145,10 @@ export interface CorrectedSaju {
         day: string;
         hour: string | null;
     };
+    /** 합충형파해(合沖刑破害): 천간·지지 상호관계. 겹침 허용, 시간 모름이면 시주 제외. */
+    relations: Relation[];
+    /** 공망(空亡): 일주 순중공망. 연·월·시지에서 판정(일지 제외). */
+    gongmang: Gongmang;
 }
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.

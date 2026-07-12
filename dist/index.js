@@ -2540,7 +2540,7 @@ function zonedDateTimeToUtc(year, month, day, hour, minute, timeZone) {
 // 일간 기준 오행 생극 + 음양 동이(同異)로 대상 천간의 십성을 판정한다.
 // 지지 대표 십성은 '위치 음양'이 아니라 정기(지장간 본기) 천간의 음양으로 판정한다
 // (예: 일지 자(子)는 위치상 양이지만 정기 계(癸)가 음수라 경금 일간 기준 상관).
-const STEMS$1 = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const STEMS$2 = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
 /** 천간 → 오행. */
 const STEM_ELEMENT = {
     갑: '목', 을: '목', 병: '화', 정: '화', 무: '토',
@@ -2571,7 +2571,7 @@ const CONTROLS = {
 };
 /** 천간 음양: 정렬 순서(갑을병정…) 짝수 index=양, 홀수=음. */
 function isYangStem(stem) {
-    return STEMS$1.indexOf(stem) % 2 === 0;
+    return STEMS$2.indexOf(stem) % 2 === 0;
 }
 /**
  * 일간(dayMaster) 기준으로 대상 천간의 십성을 판정한다.
@@ -12001,7 +12001,7 @@ const SAJU_MONTH_BY_TERM = {
 const MONTH_PILLAR_BASE = [2, 14, 26, 38, 50];
 /** 年上起月法으로 월주 60갑자 id를 구한다. */
 function monthPillarId(yearStem, sajuMonth) {
-    const base = MONTH_PILLAR_BASE[STEMS$1.indexOf(yearStem) % 5];
+    const base = MONTH_PILLAR_BASE[STEMS$2.indexOf(yearStem) % 5];
     return (base + sajuMonth - 1) % 60;
 }
 /**
@@ -12051,8 +12051,8 @@ function resolveYearPillar(base, year, month, day, birthUtcMs) {
 // 일간의 장생지(화토동법: 무는 병과, 기는 정과 동일)에서 시작해 양간은 지지
 // 순행, 음간은 역행으로 배치한다. 표는 명세(docs/specs/twelve-stages-spec.md)
 // 그대로이며 5명식 20셀 대조 검증 완료. 원국·대운 양쪽에서 재사용하는 리프 모듈.
-const STEMS = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
-const BRANCHES$1 = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+const STEMS$1 = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const BRANCHES$2 = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
 /** 12단계: 장생지에서 진행 방향으로 순서대로 배치된다. */
 const STAGES = ['장생', '목욕', '관대', '건록', '제왕', '쇠', '병', '사', '묘', '절', '태', '양'];
 /** 일간 → 장생지 (화토동법: 무=병, 기=정). */
@@ -12062,9 +12062,9 @@ const BIRTH_BRANCH = {
 };
 /** 일간(dayStem) 기준 대상 지지(branch)의 12운성. 양간 순행·음간 역행. */
 function lifeStage(dayStem, branch) {
-    const start = BRANCHES$1.indexOf(BIRTH_BRANCH[dayStem]);
-    const forward = STEMS.indexOf(dayStem) % 2 === 0; // 갑·병·무·경·임 = 양간
-    const steps = (BRANCHES$1.indexOf(branch) - start) * (forward ? 1 : -1);
+    const start = BRANCHES$2.indexOf(BIRTH_BRANCH[dayStem]);
+    const forward = STEMS$1.indexOf(dayStem) % 2 === 0; // 갑·병·무·경·임 = 양간
+    const steps = (BRANCHES$2.indexOf(branch) - start) * (forward ? 1 : -1);
     return STAGES[(steps + 12) % 12];
 }
 
@@ -14934,7 +14934,7 @@ function trueSolarParts(utc, latitude, longitude) {
 // (docs/specs/sinsal-spec.md) 그대로 하드코딩한다(규칙에서 직접 유도 금지).
 // 겹침 허용: 같은 신살이 여러 번 성립하면 제거·병합 없이 전부 표기하고,
 // positions(성립 기둥)로 구분한다. 신살은 중첩될수록 기운이 강한 것으로 본다.
-const BRANCHES = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+const BRANCHES$1 = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
 /** 지지 → 소속 삼합국의 묘지(墓地, 끝 글자). 인오술(화)/사유축(금)/신자진(수)/해묘미(목). */
 const TRINE_GRAVE = {
     인: '술', 오: '술', 술: '술',
@@ -14949,8 +14949,8 @@ const TWELVE_NAMES = [
 ];
 /** 기준 지지(base)의 삼합국으로 대상 지지(target)의 12신살을 판정한다. */
 function twelveGod(base, target) {
-    const start = (BRANCHES.indexOf(TRINE_GRAVE[base]) + 1) % 12; // 겁살 위치
-    return TWELVE_NAMES[(BRANCHES.indexOf(target) - start + 12) % 12];
+    const start = (BRANCHES$1.indexOf(TRINE_GRAVE[base]) + 1) % 12; // 겁살 위치
+    return TWELVE_NAMES[(BRANCHES$1.indexOf(target) - start + 12) % 12];
 }
 /**
  * 일간 기준 신살표: 일간 → 성립 지지들(문자열의 각 글자). 4기둥 지지에서 매칭(일지 포함).
@@ -15045,6 +15045,195 @@ function computeSinsal(yearPillar, monthPillar, dayPillar, hourPillar) {
         add(name, pillars.filter((p) => branches.includes(p.branch)).map((p) => p.name));
     }
     return { twelve, stars };
+}
+
+// ─── 합충형파해(合沖刑破害)·공망(空亡) ──────────────────────────────────────
+// 보정된 4기둥의 천간·지지 상호관계(합·충·형·파·해·원진)와 순중공망을 판정한다.
+// 규칙표는 포스텔러 만세력 실제 출력 명식으로 검증된 관측값이므로 명세
+// (docs/specs/relations-spec.md) 그대로 하드코딩한다. 검증으로 확정된 3가지:
+// (1) 천간충은 10쌍(같은 음양 + 오행 상극), (2) 부분형(삼형 중 2개)은 제외,
+// (3) 반합은 삼합 부분 + 방합 부분 모두 포함.
+// 겹침 허용(신살과 동일): 같은 쌍이 여러 관계에 해당하면 전부 별도 표기.
+// 합화(合化) 판정은 하지 않는다 — 합 성립 사실만 내고 오행은 참고 필드.
+const STEMS = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const BRANCHES = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+/** 천간합 5쌍 — 이름은 표 순서 고정(예: 연간 임 + 월간 정 → '정임합'). */
+const STEM_HAP = [
+    { pair: '갑기', name: '갑기합', element: '토' },
+    { pair: '을경', name: '을경합', element: '금' },
+    { pair: '병신', name: '병신합', element: '수' },
+    { pair: '정임', name: '정임합', element: '목' },
+    { pair: '무계', name: '무계합', element: '화' },
+];
+/**
+ * 천간충 10쌍(같은 음양 + 오행 상극). 이름은 극을 당하는 천간이 앞 —
+ * 관측(P 임무충, Q 갑경충)을 재현하고 전통 4쌍 명칭(갑경·을신·병임·정계충)과 일치.
+ */
+const STEM_CHUNG = [
+    { pair: '갑무', name: '무갑충' },
+    { pair: '갑경', name: '갑경충' },
+    { pair: '병경', name: '경병충' },
+    { pair: '병임', name: '병임충' },
+    { pair: '무임', name: '임무충' },
+    { pair: '을기', name: '기을충' },
+    { pair: '을신', name: '을신충' },
+    { pair: '정신', name: '신정충' },
+    { pair: '정계', name: '정계충' },
+    { pair: '기계', name: '계기충' },
+];
+/** 지지 육합 6쌍 — 참고 오행. */
+const YUKHAP = [
+    { pair: '자축', name: '자축합', element: '토' },
+    { pair: '인해', name: '인해합', element: '목' },
+    { pair: '묘술', name: '묘술합', element: '화' },
+    { pair: '진유', name: '진유합', element: '금' },
+    { pair: '사신', name: '사신합', element: '수' },
+    { pair: '오미', name: '오미합', element: '토' },
+];
+/** 지지 삼합 4국. 3지지 모두 → 삼합, 서로 다른 2지지만 → 삼합반합. */
+const SAMHAP = [
+    { group: '인오술', element: '화' },
+    { group: '사유축', element: '금' },
+    { group: '신자진', element: '수' },
+    { group: '해묘미', element: '목' },
+];
+/** 지지 방합 4국. 3지지 모두 → 방합, 서로 다른 2지지만 → 방합반합(Q 인진반합). */
+const BANGHAP = [
+    { group: '인묘진', element: '목' },
+    { group: '사오미', element: '화' },
+    { group: '신유술', element: '금' },
+    { group: '해자축', element: '수' },
+];
+const JIJI_CHUNG = ['자오', '축미', '인신', '묘유', '진술', '사해'];
+/** 삼형: 3지지 전부 있을 때만 성립(부분형 제외 — 명세 검증 확정). */
+const SAMHYEONG = ['인사신', '축술미'];
+const SANGHYEONG = '자묘';
+/** 자형: 같은 지지 2개 이상. */
+const JAHYEONG = new Set(['진', '오', '유', '해']);
+const PA = ['자유', '축진', '인해', '묘오', '사신', '술미'];
+const HAE = ['자미', '축오', '인사', '묘진', '신해', '유술'];
+const WONJIN = ['자미', '축오', '인유', '묘신', '진해', '사술'];
+/** 순중공망: 순(旬) 인덱스(일주 60갑자 ÷ 10) → 공망 지지 2개. */
+const GONGMANG_BY_SOON = [
+    ['술', '해'], ['신', '유'], ['오', '미'], ['진', '사'], ['인', '묘'], ['자', '축'],
+];
+function buildPillars(yearPillar, monthPillar, dayPillar, hourPillar) {
+    const names = ['연주', '월주', '일주', '시주'];
+    const raw = [yearPillar, monthPillar, dayPillar, hourPillar];
+    const pillars = [];
+    for (let i = 0; i < raw.length; i++) {
+        const p = raw[i];
+        if (p)
+            pillars.push({ name: names[i], stem: p.charAt(0), branch: p.charAt(1), idx: i });
+    }
+    return pillars;
+}
+/** 두 글자가 pair 문자열과 일치하는가(순서 무관). */
+function isPair(pair, a, b) {
+    return ((pair.charAt(0) === a && pair.charAt(1) === b) ||
+        (pair.charAt(0) === b && pair.charAt(1) === a));
+}
+/** 성립 기둥들이 연달아 붙어 있으면 인접(쌍이면 연월·월일·일시). */
+function isAdjacent(ps) {
+    const idxs = ps.map((p) => p.idx);
+    return Math.max(...idxs) - Math.min(...idxs) === ps.length - 1;
+}
+/**
+ * 4기둥 간지(한글, 예: '임신')로 합충형파해를 판정한다.
+ * hourPillar가 null이면 시간 모름 → 시주는 모든 판정에서 제외.
+ * 출력 순서는 결정적: 타입은 RelationType 나열 순서, 같은 타입 안에서는
+ * 규칙표 행 → 기둥 쌍(연월·연일·연시·월일·월시·일시) 순서.
+ */
+function computeRelations(yearPillar, monthPillar, dayPillar, hourPillar) {
+    const pillars = buildPillars(yearPillar, monthPillar, dayPillar, hourPillar);
+    const pairs = [];
+    for (let i = 0; i < pillars.length; i++) {
+        for (let j = i + 1; j < pillars.length; j++)
+            pairs.push([pillars[i], pillars[j]]);
+    }
+    const relations = [];
+    const add = (type, name, ps, element) => {
+        relations.push({
+            type,
+            name,
+            ...(element !== undefined && { element }),
+            positions: ps.map((p) => p.name),
+            adjacent: isAdjacent(ps),
+        });
+    };
+    // 쌍 규칙표 공통 판정: 표의 각 쌍을 모든 기둥 쌍에 대조한다.
+    const scanPairs = (type, table, pick) => {
+        for (const { pair, name, element } of table) {
+            for (const [a, b] of pairs) {
+                if (isPair(pair, pick(a), pick(b)))
+                    add(type, name, [a, b], element);
+            }
+        }
+    };
+    // 삼합·방합: 국의 서로 다른 지지가 3개 모두 있으면 전체 성립(해당 기둥 전부),
+    // 2개만 있으면 그 두 지지를 가진 기둥 쌍마다 반합.
+    const scanGroups = (groups, fullType, halfType) => {
+        for (const { group, element } of groups) {
+            const present = [...group].filter((ch) => pillars.some((p) => p.branch === ch));
+            if (present.length === 3) {
+                add(fullType, group + fullType, pillars.filter((p) => group.includes(p.branch)), element);
+            }
+            else if (present.length === 2) {
+                for (const [a, b] of pairs) {
+                    if (a.branch !== b.branch && group.includes(a.branch) && group.includes(b.branch)) {
+                        add(halfType, present.join('') + '반합', [a, b], element);
+                    }
+                }
+            }
+        }
+    };
+    scanPairs('천간합', STEM_HAP, (p) => p.stem);
+    scanPairs('천간충', STEM_CHUNG, (p) => p.stem);
+    scanPairs('육합', YUKHAP, (p) => p.branch);
+    scanGroups(SAMHAP, '삼합', '삼합반합');
+    scanGroups(BANGHAP, '방합', '방합반합');
+    scanPairs('충', JIJI_CHUNG.map((pair) => ({ pair, name: pair + '충' })), (p) => p.branch);
+    for (const group of SAMHYEONG) {
+        const present = [...group].filter((ch) => pillars.some((p) => p.branch === ch));
+        if (present.length === 3) {
+            add('삼형', group + '삼형', pillars.filter((p) => group.includes(p.branch)));
+        }
+    }
+    for (const [a, b] of pairs) {
+        if (isPair(SANGHYEONG, a.branch, b.branch))
+            add('상형', SANGHYEONG + '상형', [a, b]);
+    }
+    for (const [a, b] of pairs) {
+        if (a.branch === b.branch && JAHYEONG.has(a.branch)) {
+            add('자형', a.branch + b.branch + '자형', [a, b]);
+        }
+    }
+    scanPairs('파', PA.map((pair) => ({ pair, name: pair + '파' })), (p) => p.branch);
+    scanPairs('해', HAE.map((pair) => ({ pair, name: pair + '해' })), (p) => p.branch);
+    scanPairs('원진', WONJIN.map((pair) => ({ pair, name: pair + '원진' })), (p) => p.branch);
+    return relations;
+}
+/** 간·지 인덱스에서 60갑자 인덱스 복원(i ≡ 간 mod 10, i ≡ 지 mod 12). */
+function sixtyIndex(stem, branch) {
+    return (6 * STEMS.indexOf(stem) - 5 * BRANCHES.indexOf(branch) + 60) % 60;
+}
+/**
+ * 일주 기준 순중공망을 판정한다. 공망 지지 2개와, 연·월·시지 중 공망에
+ * 해당하는 기둥을 낸다(일지는 기준이라 제외). hourPillar가 null이면 시주 제외.
+ */
+function computeGongmang(yearPillar, monthPillar, dayPillar, hourPillar) {
+    const soon = Math.floor(sixtyIndex(dayPillar.charAt(0), dayPillar.charAt(1)) / 10);
+    const branches = GONGMANG_BY_SOON[soon];
+    const targets = [
+        { name: '연주', branch: yearPillar.charAt(1) },
+        { name: '월주', branch: monthPillar.charAt(1) },
+    ];
+    if (hourPillar)
+        targets.push({ name: '시주', branch: hourPillar.charAt(1) });
+    return {
+        branches: [...branches],
+        positions: targets.filter((t) => branches.includes(t.branch)).map((t) => t.name),
+    };
 }
 
 /**
@@ -15177,6 +15366,9 @@ function correctPillars(input) {
         day: lifeStage(dm, tstBase.dayPillar.charAt(1)),
         hour: hourKnown ? lifeStage(dm, hourBranch) : null,
     };
+    // 13. 합충형파해·공망: 보정된 4기둥 간지로 판정. 시간 모름이면 시주 제외.
+    const relations = computeRelations(yp.hangul, mp.combined.hangul, tstBase.dayPillar, hourKnown ? tstBase.hourPillar : null);
+    const gongmang = computeGongmang(yp.hangul, mp.combined.hangul, tstBase.dayPillar, hourKnown ? tstBase.hourPillar : null);
     return {
         yearPillar: yp.hangul,
         yearPillarHanja: yp.hanja,
@@ -15193,6 +15385,8 @@ function correctPillars(input) {
         majorLuck,
         sinsal,
         twelveStages,
+        relations,
+        gongmang,
     };
 }
 
