@@ -43,6 +43,7 @@ import { trueSolarParts } from './true-solar-time';
 import { computeSinsal, Sinsal } from './sinsal';
 import { lifeStage } from './twelve-stages';
 import { computeRelations, computeGongmang, Relation, Gongmang } from './relations';
+import { computeStrength, Strength } from './strength';
 
 // 진태양시 계산은 true-solar-time.ts로 이동. 기존 import 경로 호환을 위해 re-export.
 export { trueSolarParts };
@@ -141,6 +142,8 @@ export interface CorrectedSaju {
   relations: Relation[];
   /** 공망(空亡): 일주 순중공망. 연·월·시지에서 판정(일지 제외). */
   gongmang: Gongmang;
+  /** 신강/신약: 억부 점수·라벨 + 조후 별도 필드. 시간 모름이면 시주 제외. */
+  strength: Strength;
 }
 
 /** 기둥 한글 배열의 천간·지지 오행을 세어 분포를 만든다. */
@@ -271,6 +274,15 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     hourKnown ? tstBase.hourPillar : null,
   );
 
+  // 14. 신강/신약: 억부 점수 판정. 감점 입력은 relations 출력(천간합·지지충)만 쓴다.
+  const strength = computeStrength(
+    yp.hangul,
+    mp.combined.hangul,
+    tstBase.dayPillar,
+    hourKnown ? tstBase.hourPillar : null,
+    relations,
+  );
+
   return {
     yearPillar: yp.hangul,
     yearPillarHanja: yp.hanja,
@@ -289,5 +301,6 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     twelveStages,
     relations,
     gongmang,
+    strength,
   };
 }

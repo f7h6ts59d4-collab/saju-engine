@@ -34,6 +34,7 @@
 import { trueSolarParts } from './true-solar-time';
 import { Sinsal } from './sinsal';
 import { Relation, Gongmang } from './relations';
+import { Strength } from './strength';
 export { trueSolarParts };
 export interface BirthInput {
     /** 생년월일 (calendar 기준) */
@@ -149,6 +150,8 @@ export interface CorrectedSaju {
     relations: Relation[];
     /** 공망(空亡): 일주 순중공망. 연·월·시지에서 판정(일지 제외). */
     gongmang: Gongmang;
+    /** 신강/신약: 억부 점수·라벨 + 조후 별도 필드. 시간 모름이면 시주 제외. */
+    strength: Strength;
 }
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.
