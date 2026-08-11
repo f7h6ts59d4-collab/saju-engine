@@ -15434,8 +15434,18 @@ function correctPillars(input) {
     const mp = getPillarById(monthPillarId(yp.hangul.charAt(0), sajuMonth));
     // 7. 일주·시주: 출생지 진태양시 달력값으로 산출. 엔진 KST 경도 보정은 끈다.
     //    진태양시가 자정을 넘으면 tst.day가 자동으로 전날/다음날이 되어 일주가 따라간다.
+    //    조자시설: 진태양시 23시대(자시)는 다음날에 속하므로 날짜를 하루 넘겨,
+    //    일주와 자시 시천간(오자둔법)을 모두 다음날 일간 기준으로 계산한다.
+    //    (엔진은 23시에 날짜를 넘기지 않아 일주·시천간이 당일 기준으로 나온다.)
     const tst = trueSolarParts(birthUtc, input.latitude, input.longitude);
-    const tstBase = calculateSaju(tst.year, tst.month, tst.day, tst.hour, tst.minute, {
+    let { year: tstYear, month: tstMonth, day: tstDay } = tst;
+    if (tst.hour === 23) {
+        const next = new Date(Date.UTC(tstYear, tstMonth - 1, tstDay + 1));
+        tstYear = next.getUTCFullYear();
+        tstMonth = next.getUTCMonth() + 1;
+        tstDay = next.getUTCDate();
+    }
+    const tstBase = calculateSaju(tstYear, tstMonth, tstDay, tst.hour, tst.minute, {
         applyTimeCorrection: false,
     });
     // 8. 파생 정보(기존 보정 결과 위에 얹음): 일간 + 오행 분포.
