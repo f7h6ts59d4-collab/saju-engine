@@ -112,15 +112,63 @@ describe('correctPillars - 진태양시 일주·시주', () => {
     expect(seoul.dayPillar).toBe(engine.dayPillar);
   });
 
-  // 7) 날짜 넘김(조자시): 진태양시가 자정을 넘으면 일주가 전날로 넘어간다.
-  //    서울 00:20 → 진태양시 전날 23:41 → 일주 기해(전날). 00:50 → 00:11 → 경자(그날).
-  it('진태양시가 자정을 넘으면 일주가 전날로 넘어간다 (서울 1992-07-23)', () => {
+  // 7) 조자시설: 진태양시 23시(자시)부터 일주가 다음날로 넘어간다.
+  //    서울 1992-07-23 진태양시 ≈ 벽시계 -38분(경도 -32분, EoT -6분):
+  //    23:20 → 진태양시 22:42(해시) → 일주 경자(그날). 23:50 → 23:12(자시) → 신축(다음날).
+  it('진태양시 23시대(자시)부터 일주가 다음날로 넘어간다 (서울 1992-07-23)', () => {
+    const haesi = correctPillars({ year: 1992, month: 7, day: 23, hour: 23, minute: 20, ...SEOUL });
+    const jasi = correctPillars({ year: 1992, month: 7, day: 23, hour: 23, minute: 50, ...SEOUL });
+
+    expect(haesi.dayPillar).toBe('경자'); // 해시 → 그날(07-23)
+    expect(jasi.dayPillar).toBe('신축'); // 자시 → 다음날(07-24)
+  });
+
+  // 7-1) 자정 넘김 상쇄: 진태양시가 자정을 넘어 전날 23시대가 되어도, 조자시설로
+  //      다시 하루를 넘기므로 일주는 그날 값 그대로다.
+  //      서울 00:20 → 진태양시 전날 23:41(자시) → 조자시 진행 → 일주 경자(그날).
+  it('진태양시 자정 넘김은 조자시 진행과 상쇄되어 일주가 그날 값이다 (서울 1992-07-23)', () => {
     const early = correctPillars({ year: 1992, month: 7, day: 23, hour: 0, minute: 20, ...SEOUL });
     const late = correctPillars({ year: 1992, month: 7, day: 23, hour: 0, minute: 50, ...SEOUL });
 
-    expect(early.dayPillar).toBe('기해'); // 진태양시 전날(07-22)
-    expect(late.dayPillar).toBe('경자'); // 진태양시 그날(07-23)
-    expect(early.dayPillar).not.toBe(late.dayPillar);
+    expect(early.dayPillar).toBe('경자'); // 전날 23:41 자시 → 다시 그날(07-23)
+    expect(late.dayPillar).toBe('경자'); // 진태양시 00:11 그날(07-23)
+  });
+
+  // 7-2) 자시 시천간(오자둔법): 자시의 시천간은 넘어간 날의 일간 기준이다.
+  //      서울 1956-12-15 23:30(당시 표준시 UTC+8:30) → 진태양시 23:32(자시)
+  //      → 일주 정사(12-16), 시주 경자(정일 자시). 무자시(당일 병 기준)가 나오면 버그.
+  it('자시 시천간은 넘어간 날 일간 기준이다 (서울 1956-12-15 23:30 → 정사일 경자시)', () => {
+    const jasi = correctPillars({ year: 1956, month: 12, day: 15, hour: 23, minute: 30, ...SEOUL });
+    const before = correctPillars({ year: 1956, month: 12, day: 15, hour: 22, minute: 0, ...SEOUL });
+
+    expect(jasi.dayPillar).toBe('정사'); // 조자시설 → 12-16 일주
+    expect(jasi.hourPillar).toBe('경자'); // 정일 자시 = 경자 (오자둔법)
+    expect(before.dayPillar).toBe('병진'); // 해시(진태양시 22:02)는 그날 일주 유지
+    expect(before.hourPillar).toBe('기해'); // 병일 해시 = 기해
+  });
+
+  // 7-3) 조자시 날짜 진행과 절입 판정의 독립: 일주가 조자시로 절기 당일(다음날)로
+  //      넘어가도, 월주·연주는 실제 출생 순간(UTC) vs 절입 시각으로 판정된다.
+  //      입춘 2026 = 2026-02-04 05:02 KST. 서울 02-03 23:55 → 진태양시 23:09(자시)
+  //      → 일주는 02-04(기유)로 넘어가지만 출생은 절입 전이므로 축월·전년 유지.
+  it('조자시로 일주가 절기 당일로 넘어가도 월주·연주는 절입 전 값이다 (입춘 2026 직전)', () => {
+    const r = correctPillars({ year: 2026, month: 2, day: 3, hour: 23, minute: 55, ...SEOUL });
+
+    expect(r.dayPillar).toBe('기유'); // 조자시설 → 02-04 일주
+    expect(r.hourPillar).toBe('갑자'); // 기일 자시 = 갑자 (오자둔법)
+    expect(r.monthPillar).toBe('기축'); // 절입(05:02) 전 → 축월 유지
+    expect(r.yearPillar).toBe('을사'); // 입춘 전 → 2025년 간지 유지
+  });
+
+  // 7-4) 연말 경계: 12-31 23시대 출생은 일주가 다음해 1-1로 넘어가지만,
+  //      연주는 입춘 기준(그대로 출생년 간지), 월주는 자월(대설~소한) 그대로다.
+  it('12-31 23시대 출생은 일주만 새해로 넘어가고 연주·월주는 유지된다 (서울 2025-12-31)', () => {
+    const r = correctPillars({ year: 2025, month: 12, day: 31, hour: 23, minute: 50, ...SEOUL });
+
+    expect(r.dayPillar).toBe('을해'); // 조자시설 → 2026-01-01 일주
+    expect(r.hourPillar).toBe('병자'); // 을일 자시 = 병자 (오자둔법)
+    expect(r.monthPillar).toBe('무자'); // 자월(대설 12-07~소한 01-05) 유지
+    expect(r.yearPillar).toBe('을사'); // 입춘 전이므로 2025년 간지 유지
   });
 
   // 8) 균시차(EoT) 반영: 같은 도시·같은 벽시계라도 달이 다르면 진태양시가 다르다.
