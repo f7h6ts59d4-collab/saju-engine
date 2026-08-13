@@ -37,6 +37,9 @@
 
 - 통근 보너스: 일간과 같은 오행이 지장간에 있는 지지마다 아군 +8.
   해당 지지 12운성이 건록·제왕이면 +12로 상향.
+  통근 상세(roots)에는 궁위(pillar: 연지/월지/일지/시지)를 기록한다 —
+  god-states 모듈 rooted.pillar와 같은 어휘(교차 불변식 검증용,
+  god-states-spec 참조). damages의 '연주/월주'는 기둥 이름으로 기존 유지.
 - 감점: 천간합 성립 시 묶인 두 천간의 세력 50%.
   지지충 성립 시 충 맞은 두 지지의 정기 세력 50% (지장간 점수는 유지).
   감점은 relations 모듈 출력을 입력으로 사용한다 (자체 재계산 금지).
@@ -92,7 +95,7 @@ strength: {
   factors: {
     deukryeong: boolean;        // 득령
     deukji: boolean;            // 득지
-    roots: Array<{ branch: string; stage: string; boosted: boolean }>; // 통근 상세
+    roots: Array<{ branch: string; pillar: '연지'|'월지'|'일지'|'시지'; stage: string; boosted: boolean }>; // 통근 상세
     damages: Array<{ kind: '합반'|'충'; targets: string[] }>;          // 적용된 감점
   };
   label: '태약'|'신약'|'중화신약'|'중화'|'중화신강'|'신강'|'태강';
@@ -105,7 +108,7 @@ strength: {
 
 ### 카논 (필수 통과)
 - 1992-07-23 04:30 대구, 남 (임신 정미 경자 무인, 일간 경금)
-- 기댓값: 득령 O(미토 정인) / 득지 X(자수 상관) / 통근: 신(건록, 가중) /
+- 기댓값: 득령 O(미토 정인) / 득지 X(자수 상관) / 통근: 신(연지, 건록, 가중) /
   감점: 정임합(정·임), 인신충(인·신) / **라벨 = 중화신강** / favorable = 식상·재성·관성 /
   johu = 여름·조열, earthFlags [미=조토]
 - 근거: 대운 실증 역추정 (기유 정인·겁재·제왕 구간 최악 = 과충전,
@@ -136,3 +139,8 @@ strength: {
 - 격국 판정 없음
 - 조후 점수화 없음
 - 종격(從格) 등 특수격 판정 없음 — 극단 ratio도 일반 라벨로만 표기
+
+## 개정 이력
+- v1.1: factors.roots에 pillar('연지/월지/일지/시지') 가산 — 같은 지지 중복
+  명식에서의 모호성 제거 + god-states 모듈과의 교차 불변식 지원
+  (god-states-spec §검증 참조). 판정 로직·점수·라벨 불변.
