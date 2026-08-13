@@ -19,8 +19,9 @@ export interface Strength {
     deukryeong: boolean;
     /** 득지: 일지 정기의 십성이 비겁·인성. */
     deukji: boolean;
-    /** 통근 상세: 일간과 같은 오행이 지장간에 있는 지지. 건록·제왕이면 boosted. */
-    roots: { branch: string; stage: string; boosted: boolean }[];
+    /** 통근 상세: 일간과 같은 오행이 지장간에 있는 지지. 건록·제왕이면 boosted.
+     *  pillar는 godStates rooted.pillar와 같은 어휘(교차 검증용) — damages의 '연주/월주'는 기둥 이름으로 별개. */
+    roots: { branch: string; pillar: '연지' | '월지' | '일지' | '시지'; stage: string; boosted: boolean }[];
     /** 적용된 감점: 천간합(합반)·지지충. relations 출력 순서 그대로. */
     damages: { kind: '합반' | '충'; targets: string[] }[];
   };
@@ -79,6 +80,7 @@ export function computeStrength(
 ): Strength {
   const dm = dayPillar.charAt(0);
   const names = ['연주', '월주', '일주', '시주'];
+  const branchNames = ['연지', '월지', '일지', '시지'] as const;
   const pillars = [yearPillar, monthPillar, dayPillar, hourPillar];
 
   // 감점 수집: relations의 천간합·지지충에서 기둥 위치만 가져온다(재계산 금지).
@@ -124,7 +126,7 @@ export function computeStrength(
     if (hidden.some((h) => SAME_ELEMENT_GODS.has(h.god))) {
       const stage = lifeStage(dm, branch);
       const boosted = BOOST_STAGES.has(stage);
-      roots.push({ branch, stage, boosted });
+      roots.push({ branch, pillar: branchNames[i], stage, boosted });
       support += boosted ? ROOT_BONUS_BOOSTED : ROOT_BONUS;
     }
   }

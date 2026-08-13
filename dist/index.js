@@ -15280,6 +15280,7 @@ const WET_EARTH = new Set(['진', '축']);
 function computeStrength(yearPillar, monthPillar, dayPillar, hourPillar, relations) {
     const dm = dayPillar.charAt(0);
     const names = ['연주', '월주', '일주', '시주'];
+    const branchNames = ['연지', '월지', '일지', '시지'];
     const pillars = [yearPillar, monthPillar, dayPillar, hourPillar];
     // 감점 수집: relations의 천간합·지지충에서 기둥 위치만 가져온다(재계산 금지).
     // 같은 기둥이 여러 관계에 걸려도 감점은 한 번만 적용한다.
@@ -15324,7 +15325,7 @@ function computeStrength(yearPillar, monthPillar, dayPillar, hourPillar, relatio
         if (hidden.some((h) => SAME_ELEMENT_GODS.has(h.god))) {
             const stage = lifeStage(dm, branch);
             const boosted = BOOST_STAGES.has(stage);
-            roots.push({ branch, stage, boosted });
+            roots.push({ branch, pillar: branchNames[i], stage, boosted });
             support += boosted ? ROOT_BONUS_BOOSTED : ROOT_BONUS;
         }
     }
@@ -15361,6 +15362,65 @@ function computeStrength(yearPillar, monthPillar, dayPillar, hourPillar, relatio
         favorable,
         johu: { season: season.season, label: season.label, earthFlags },
     };
+}
+
+// ─── 십성 기운(투출·통근) ───────────────────────────────────────────────────
+// 다섯 십성 그룹(비겁·식상·재성·관성·인성)의 천간 투출(exposed)과 지지 뿌리
+// (rooted)를 기계적으로 조회하고 4단 상태로 분류한다. 존재 사실만 기록하며,
+// 생극 흐름·발현 해석과 합충에 의한 손상은 해석층 몫(relations를 함께 읽는다).
+// 통근 기준은 strength-spec 학파 스위치 표를 공유한다: 같은 오행 지장간이면
+// 뿌리, 조토생금 인정 — 조습은 뿌리 인정에 영향 없이 earth 플래그로만 표시.
+const GROUPS = ['비겁', '식상', '재성', '관성', '인성'];
+const GOD_GROUP = {
+    비견: '비겁', 겁재: '비겁', 식신: '식상', 상관: '식상', 편재: '재성',
+    정재: '재성', 편관: '관성', 정관: '관성', 편인: '인성', 정인: '인성',
+};
+const STEM_POSITIONS = ['연간', '월간', null, '시간'];
+const BRANCH_PILLARS = ['연지', '월지', '일지', '시지'];
+/** 지장간 층 이름: hiddenGods 배열 순서(여기·중기·정기, 2글자 지지는 여기·정기). */
+const LAYERS_3 = ['여기', '중기', '정기'];
+const LAYERS_2 = ['여기', '정기'];
+/** 조습 표시 플래그. 뿌리 인정·상태 판정에는 영향 없음 (명세 §판정 규칙). */
+const EARTH = {
+    미: '조토', 술: '조토', 진: '습토', 축: '습토',
+};
+/**
+ * 보정된 4기둥 간지(한글)로 다섯 십성 그룹의 투출·통근 상태를 판정한다.
+ * hourPillar가 null이면 시간 모름 → 시주는 판정에서 제외.
+ */
+function computeGodStates(yearPillar, monthPillar, dayPillar, hourPillar) {
+    const dm = dayPillar.charAt(0);
+    const pillars = [yearPillar, monthPillar, dayPillar, hourPillar];
+    const states = {};
+    for (const g of GROUPS)
+        states[g] = { exposed: [], rooted: [], state: '무' };
+    for (let i = 0; i < pillars.length; i++) {
+        const p = pillars[i];
+        if (!p)
+            continue;
+        const position = STEM_POSITIONS[i];
+        if (position) {
+            const stem = p.charAt(0);
+            const god = tenGod(dm, stem);
+            states[GOD_GROUP[god]].exposed.push({ position, stem, god });
+        }
+        const branch = p.charAt(1);
+        const hidden = hiddenGods(dm, branch);
+        const layers = hidden.length === 3 ? LAYERS_3 : LAYERS_2;
+        const earth = EARTH[branch] ?? null;
+        hidden.forEach((h, j) => {
+            states[GOD_GROUP[h.god]].rooted.push({
+                branch, pillar: BRANCH_PILLARS[i], layer: layers[j], stem: h.stem, god: h.god, earth,
+            });
+        });
+    }
+    for (const g of GROUPS) {
+        const s = states[g];
+        s.state = s.exposed.length
+            ? s.rooted.length ? '투출유근' : '투출무근'
+            : s.rooted.length ? '잠복' : '무';
+    }
+    return states;
 }
 
 /**
@@ -15508,6 +15568,8 @@ function correctPillars(input) {
     const gongmang = computeGongmang(yp.hangul, mp.combined.hangul, tstBase.dayPillar, hourKnown ? tstBase.hourPillar : null);
     // 14. 신강/신약: 억부 점수 판정. 감점 입력은 relations 출력(천간합·지지충)만 쓴다.
     const strength = computeStrength(yp.hangul, mp.combined.hangul, tstBase.dayPillar, hourKnown ? tstBase.hourPillar : null, relations);
+    // 15. 십성 기운(투출·통근): 다섯 십성 그룹의 천간 투출·지지 뿌리 조회.
+    const godStates = computeGodStates(yp.hangul, mp.combined.hangul, tstBase.dayPillar, hourKnown ? tstBase.hourPillar : null);
     return {
         yearPillar: yp.hangul,
         yearPillarHanja: yp.hanja,
@@ -15527,6 +15589,7 @@ function correctPillars(input) {
         relations,
         gongmang,
         strength,
+        godStates,
     };
 }
 

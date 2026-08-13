@@ -21,7 +21,9 @@ describe('strength - 카논 (1992-07-23 04:30 대구 → 임신 정미 경자 �
   it('득령 O(미토 정인) · 득지 X(자수 상관) · 통근 신(건록 가중)', () => {
     expect(r.strength.factors.deukryeong).toBe(true);
     expect(r.strength.factors.deukji).toBe(false);
-    expect(r.strength.factors.roots).toEqual([{ branch: '신', stage: '건록', boosted: true }]);
+    expect(r.strength.factors.roots).toEqual([
+      { branch: '신', pillar: '연지', stage: '건록', boosted: true },
+    ]);
   });
 
   it('감점: 정임합(합반) · 인신충 — relations 출력 순서 그대로', () => {

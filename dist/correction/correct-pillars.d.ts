@@ -35,6 +35,7 @@ import { trueSolarParts } from './true-solar-time';
 import { Sinsal } from './sinsal';
 import { Relation, Gongmang } from './relations';
 import { Strength } from './strength';
+import { GodStates } from './god-states';
 export { trueSolarParts };
 export interface BirthInput {
     /** 생년월일 (calendar 기준) */
@@ -152,6 +153,8 @@ export interface CorrectedSaju {
     gongmang: Gongmang;
     /** 신강/신약: 억부 점수·라벨 + 조후 별도 필드. 시간 모름이면 시주 제외. */
     strength: Strength;
+    /** 십성 기운: 다섯 십성 그룹의 투출·통근 상태. 시간 모름이면 시주 제외. */
+    godStates: GodStates;
 }
 /**
  * 엔진 명식에 절기 경계 월주·연주 보정을 적용한 명식을 반환한다.

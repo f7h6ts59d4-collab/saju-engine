@@ -44,6 +44,7 @@ import { computeSinsal, Sinsal } from './sinsal';
 import { lifeStage } from './twelve-stages';
 import { computeRelations, computeGongmang, Relation, Gongmang } from './relations';
 import { computeStrength, Strength } from './strength';
+import { computeGodStates, GodStates } from './god-states';
 
 // 진태양시 계산은 true-solar-time.ts로 이동. 기존 import 경로 호환을 위해 re-export.
 export { trueSolarParts };
@@ -144,6 +145,8 @@ export interface CorrectedSaju {
   gongmang: Gongmang;
   /** 신강/신약: 억부 점수·라벨 + 조후 별도 필드. 시간 모름이면 시주 제외. */
   strength: Strength;
+  /** 십성 기운: 다섯 십성 그룹의 투출·통근 상태. 시간 모름이면 시주 제외. */
+  godStates: GodStates;
 }
 
 /** 기둥 한글 배열의 천간·지지 오행을 세어 분포를 만든다. */
@@ -293,6 +296,14 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     relations,
   );
 
+  // 15. 십성 기운(투출·통근): 다섯 십성 그룹의 천간 투출·지지 뿌리 조회.
+  const godStates = computeGodStates(
+    yp.hangul,
+    mp.combined.hangul,
+    tstBase.dayPillar,
+    hourKnown ? tstBase.hourPillar : null,
+  );
+
   return {
     yearPillar: yp.hangul,
     yearPillarHanja: yp.hanja,
@@ -312,5 +323,6 @@ export function correctPillars(input: BirthInput): CorrectedSaju {
     relations,
     gongmang,
     strength,
+    godStates,
   };
 }

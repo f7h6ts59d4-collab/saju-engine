@@ -11,9 +11,11 @@ export interface Strength {
         deukryeong: boolean;
         /** 득지: 일지 정기의 십성이 비겁·인성. */
         deukji: boolean;
-        /** 통근 상세: 일간과 같은 오행이 지장간에 있는 지지. 건록·제왕이면 boosted. */
+        /** 통근 상세: 일간과 같은 오행이 지장간에 있는 지지. 건록·제왕이면 boosted.
+         *  pillar는 godStates rooted.pillar와 같은 어휘(교차 검증용) — damages의 '연주/월주'는 기둥 이름으로 별개. */
         roots: {
             branch: string;
+            pillar: '연지' | '월지' | '일지' | '시지';
             stage: string;
             boosted: boolean;
         }[];
